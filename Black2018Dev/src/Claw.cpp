@@ -11,7 +11,6 @@ Claw::Claw(int leftMotor, int rightMotor, int sensorport): lm(leftMotor), rm(rig
 {
 	lm.SetInverted(false);
 	//rm.Follow(lm);
-	rm.Follow(rm);
 	rm.SetInverted(true);
 }
 

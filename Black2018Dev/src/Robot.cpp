@@ -52,11 +52,13 @@ public:
 		drive.SetLeftFPID(.72,0.0,0,0);
 		drive.SetRightFPID(.72,0.0,0,0);
 
-		drive.SetRamp(.4);
+		drive.SetRamp(0.0);
 
 		oldLDrivePos = drive.GetLeftEncoderPosition();
 		oldRDrivePos = drive.GetRightEncoderPosition();
 
+		imu.Begin();
+		imu.SetCurrentQuaternionAsInit();
 		SendData();
 	}
 
@@ -64,6 +66,8 @@ public:
 	{
 
 		std::cout << "Auto selected: " << autoSelected << std::endl;
+
+		imu.SetInitEulers(imu.GetVector(BNO055::vector_type_t::VECTOR_EULER));
 
 		//int sensorPos = 0; // sensor units
 
@@ -156,9 +160,14 @@ public:
 	void SendData()
 	{
 		drivePos.SendData("Drive Pose");
-		ele.SendData();
-		claw.SendData();
-		drive.SendData();
+		//ele.SendData();
+		//claw.SendData();
+		//drive.SendData();
+
+		imu.SendSMData("imu");
+		//SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
+		//SmartDashboard::PutNumber("IMU Mode", imu.GetMode());
+		//SmartDashboard::PutNumber("IMU Chip ID", );
 
 		std::string data;
 		data = DriverStation::GetInstance().GetGameSpecificMessage();
@@ -287,12 +296,12 @@ public:
 
 			ele.SetPosition(ele.GetSetPoint()+s2y*4000.0);
 		}
-/*		else
+		/*else
 		{
 			s2y = 0;
-		}
+		}*/
 
-		ele.SetMotorSpeed(s2y);*/
+		//ele.SetMotorSpeed(s2y);
 	}
 
 	void ResetPose()
@@ -312,15 +321,15 @@ public:
 			if(data.length()>=3)
 			{
 				gotData = true;
-				if(data.substr(0,0)=="L")
+				if(data.substr(0,1)=="L")
 				{
 					ourSwitch = true;
 				}
-				if(data.substr(1,2)=="L")
+				if(data.substr(1,1)=="L")
 				{
 					scale = true;
 				}
-				if(data.substr(3,2)=="L")
+				if(data.substr(2,1)=="L")
 				{
 					theirSwitch = true;
 				}
