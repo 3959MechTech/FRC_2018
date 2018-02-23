@@ -22,7 +22,8 @@ UnicycleController::UnicycleController(Pose2D* pose)
  VelocityVector UnicycleController::Tracker(double x,double y)
  {
  	VelocityVector output;
-
+ 	output.v = sqrt(x*x+y*y);
+ 	output.w = atan2(y,x);
 
 
  	return output;
@@ -75,12 +76,12 @@ UnicycleController::UnicycleController(Pose2D* pose)
  DifferentialMotorCommand UnicycleController::GetDifferentialMotorCommand(double x,double y)
  {
 
-	return DifferentialOutput(Transform(x,y));
+	return DifferentialOutput(Tracker(x,y));
 
  }
  DifferentialMotorCommand UnicycleController::GetDifferentialMotorCommand(double phi)
  {
 	 double p = atan2(sin(phi), cos(phi));
-	 return DifferentialOutput(Transform(p));
+	 return DifferentialOutput(Tracker(p));
  }
 
