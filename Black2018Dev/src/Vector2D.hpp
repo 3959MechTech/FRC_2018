@@ -28,6 +28,8 @@ public:
 	double GetX(){return _x;};
 	double GetY(){return _y;};
 
+	double GetMag(){return sqrt(_x*_x+_y*_y);};
+
 
 	void operator=(const Vector2D& v)
 	{
