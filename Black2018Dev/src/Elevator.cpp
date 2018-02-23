@@ -12,7 +12,7 @@
 
 Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(slaveMotor)
 {
-	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,0,0,0,kTimeOut);
+	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,1,0,0,kTimeOut);
 
 	eTalon.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0, kTimeOut);
 
