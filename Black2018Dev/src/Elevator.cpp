@@ -31,7 +31,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 	posVals[Bottom][1] = .2;
 	posVals[Bottom][2] = 1.0;
 
-	posVals[Travel][0] = 3555;
+	posVals[Travel][0] = 8000;
 	posVals[Travel][1] = .2;
 	posVals[Travel][2] = 1.0;
 
