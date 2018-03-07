@@ -37,6 +37,16 @@ public:
 		_y = v._y;
 	}
 
+	void operator-(const Vector2D& v)
+	{
+		_x = _x-v._x;
+		_y = _y-v._y;
+	}
+	void operator+(const Vector2D& v)
+	{
+		_x = _x+v._x;
+		_y = _y+v._y;
+	}
 private:
 
 	double _x;
