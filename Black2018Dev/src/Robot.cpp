@@ -52,8 +52,10 @@ public:
 		camera0.SetResolution(640,480);
 		camera1.SetResolution(640,480);
 
-		autoGoal.AddDefault(autoGoal0, AutoRoutine::Straight);
-		autoGoal.AddObject(autoGoal1, AutoRoutine::Switch);
+		SetPeriod(.005);
+
+		autoGoal.AddDefault(autoGoal0, AutoRoutine::Switch);
+		autoGoal.AddObject(autoGoal1, AutoRoutine::Straight);
 		autoGoal.AddObject(autoGoal2, AutoRoutine::Scale);
 		autoGoal.AddObject(autoGoal3, AutoRoutine::BestSwitch);
 		autoGoal.AddObject(autoGoal4, AutoRoutine::BestScale);
@@ -72,11 +74,15 @@ public:
 		headingOffset = 0.0;
 
 		autoStep = 0;
-		angle = 0.0;
+		angleToTurn = 0.0;
 
 		drive.ConfigRobot(4.0,24.0,1440.0);
-		drive.SetLeftFPID(.72,0.10,0,0);
-		drive.SetRightFPID(.72,0.10,0,0);
+
+		drive.SetLeftFPID( .72,0.0,0.0,0,0);
+		drive.SetRightFPID(.72,0.0,0.0,0,0);
+
+		//drive.SetLeftFPID( .4,0.40,0.001,0.3,1);
+		//drive.SetRightFPID(.4,0.40,0.001,0.3,1);
 
 		drive.SetRamp(0.2);
 
@@ -86,6 +92,13 @@ public:
 		imu.Begin();
 		imu.SetCurrentQuaternionAsInit();
 		imu.SetInitEulers(imu.GetVector(BNO055::vector_type_t::VECTOR_EULER));
+
+		initPositions[StartingSpot::Middle][0] = 0.0;//X value
+		initPositions[StartingSpot::Middle][1] = -7.0;//y value
+		initPositions[StartingSpot::Left][0] = 0.0;//X value
+		initPositions[StartingSpot::Left][1] = -8.0;//y value
+		initPositions[StartingSpot::Right][0] = 0.0;//X value
+		initPositions[StartingSpot::Right][1] = -8.0;//y value
 
 		GetFMSData();
 		SendData();
@@ -138,15 +151,20 @@ public:
 
 		Vator();
 
-		if(stick3.GetAButton())
+		if(stick3.GetAButtonPressed())
 		{
+			autoStep=0;
+			gotData = false;
 			ResetPose();
+			GetFMSData();
 		}
 
 
+
+		AutoMidSwitch();
+
 		if(stick3.GetBButton())
 		{
-			AutoMidSwitch();
 			drive.Set(dmc);
 		}else
 		{
@@ -156,7 +174,29 @@ public:
 				drive.Set(ucm.GetDifferentialMotorCommand(500.0));
 			}else
 			{
-				Drive();
+				if(stick3.GetYButton())
+				{
+					nc.SetAngle(0.0);
+					vv.w=nc.Turn();
+					vv.v = 0.0;
+					dmc = ucm.DifferentialOutput(vv);
+					drive.Set(dmc);
+				}else
+				{
+					double x = stick3.GetX(frc::GenericHID::kRightHand);
+					double y = -stick3.GetY(frc::GenericHID::kRightHand);
+					if(sqrt(x*x+y*y)>.2)
+					{
+						vv.v = y;
+						vv.w = x;
+						drive.Set(ucm.DifferentialOutput(vv));
+					}
+					else
+					{
+						Drive();
+					}
+
+				}
 			}
 
 		}
@@ -167,11 +207,18 @@ public:
 		}
 		if(stick3.GetBumperPressed(frc::GenericHID::kLeftHand))
 		{
-			autoStep=0;
-			gotData = false;
-			GetFMSData();
+			autoStep=30;
+
+		}
+/*
+		double foo = -stick3.GetY(frc::GenericHID::kLeftHand);
+		if(fabs(foo)<.2)
+		{
+			foo = 0;
 		}
 
+		ele.SetMotorSpeed(foo);
+*/
 		//Drive();
 		v.VibrateTimer();
 
@@ -182,6 +229,7 @@ public:
 
 	void TeleopInit()
 	{
+		ResetPose();
 		SendData();
 	}
 
@@ -204,6 +252,7 @@ public:
 	}
 	void DisabledInit()
 	{
+		ResetPose();
 		GetFMSData();
 		SendData();
 	}
@@ -219,11 +268,11 @@ public:
 		SmartDashboard::PutNumber("Battery Power",DriverStation::GetInstance().GetBatteryVoltage());
 		SmartDashboard::PutNumber("autoStep",autoStep);
 
-		double phi = 3.14159*60.0/180.0;
-		SmartDashboard::PutNumber("Turn to",phi);
-		SmartDashboard::PutNumber("Turn to - fixed",atan2(sin(phi),cos(phi)));
-		SmartDashboard::PutNumber("Turn e",phi-drivePos.GetPhi());
-		SmartDashboard::PutNumber("Auto Angle Target", angle);
+		SmartDashboard::PutNumber("NC PID Angle", nc.GetAngle());
+		SmartDashboard::PutNumber("NC PID Output", nc.Turn());
+		SmartDashboard::PutNumber("NC PID Error", nc.GetPIDError());
+		SmartDashboard::PutNumber("Auto Angle Target", angleToTurn);
+		SmartDashboard::PutNumber("Auto Angle Error", CleanAngle(angleToTurn-drivePos.GetPhi()));
 
 		v0 = prefs->GetDouble("v0",nc.GetV0());
 		alpha = prefs->GetDouble("alpha",nc.GetAlpha());
@@ -232,12 +281,37 @@ public:
 		nc.SetOmega(prefs->GetDouble("maxOmega",nc.GetOmega()));
 		//ucm.Set_maxOmega(prefs->GetDouble("maxOmega",ucm.Get_maxOmega()));
 
+		nc.SetP(prefs->GetDouble("NC P",nc.GetP()));
+		nc.SetI(prefs->GetDouble("NC I",nc.GetI()));
+		nc.SetD(prefs->GetDouble("NC D",nc.GetD()));
+
+		double lf,lp,li,ld,rf,rp,ri,rd;
+		lf = drive.GetLeftF();
+		lp = drive.GetLeftP();
+		li = drive.GetLeftI();
+		ld = drive.GetLeftD();
+		rf = drive.GetRightF();
+		rp = drive.GetRightP();
+		ri = drive.GetRightI();
+		rd = drive.GetRightD();
+
+		lf = prefs->GetDouble("Drive Left F",lf);
+		lp = prefs->GetDouble("Drive Left P",lp);
+		li = prefs->GetDouble("Drive Left I",li);
+		ld = prefs->GetDouble("Drive Left D",ld);
+		rf = prefs->GetDouble("Drive Right F",rf);
+		rp = prefs->GetDouble("Drive Right P",rp);
+		ri = prefs->GetDouble("Drive Right I",ri);
+		rd = prefs->GetDouble("Drive Right D",rd);
+
 		drivePos.SendData("Drive Pose");
-		//ele.SendData();
+		ele.SendData();
 		//claw.SendData();
 		//drive.SendData();
 
 		SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
+
+		SmartDashboard::PutNumber("Turn Avg Err",nc.GetAvgPIDError());
 
 		std::string data;
 		data = DriverStation::GetInstance().GetGameSpecificMessage();
@@ -282,7 +356,7 @@ public:
 	{
 		Vector eulers = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER);
 		double phi = -CleanAngle(3.14159*eulers.x/180.0);
-		phi = phi-headingOffset;
+		phi = CleanAngle(phi-headingOffset);
 		double l,r,d;
 		if(!turning)
 		{
@@ -318,8 +392,10 @@ public:
 	void ResetPose()
 	{
 		drive.ResetEncoders();
-		drivePos.SetX(0);
-		drivePos.SetY(0);
+		oldLDrivePos = 0.0;
+		oldRDrivePos = 0.0;
+		drivePos.SetX(initPositions[spotSelected][0]);
+		drivePos.SetY(initPositions[spotSelected][1]);
 		headingOffset = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER).x;
 		headingOffset = -CleanAngle(3.14159*headingOffset/180.0);
 		drivePos.SetPhi(0.0);
@@ -428,6 +504,9 @@ public:
 
 	void GetFMSData()
 	{
+		autoSelected = autoGoal.GetSelected();//Get selected Auto Routine
+		spotSelected = startSpot.GetSelected();//Get selected Auto Routine
+
 		if(!gotData)
 		{
 			std::string data;
@@ -439,14 +518,23 @@ public:
 				if(data.substr(0,1)=="L")
 				{
 					ourSwitch = true;
+				}else
+				{
+					ourSwitch = false;
 				}
 				if(data.substr(1,1)=="L")
 				{
 					scale = true;
+				}else
+				{
+					scale = false;
 				}
 				if(data.substr(2,1)=="L")
 				{
 					theirSwitch = true;
+				}else
+				{
+					theirSwitch = false;
 				}
 
 			}
@@ -478,38 +566,65 @@ public:
 
 		switch(autoStep)
 		{
-		case 0: nc.SetAlpha(.005);
+		case 0: turning = false;
+				ele.SetEPos(Elevator::Bottom);
+				autoStep++;
+				break;
+		case 1: turning = false;
+				angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				nc.SetAlpha(.005);
 				ele.SetEPos(Elevator::Travel);
 				//nc.SetV0(1200);
-				done = DriveStraight(24.0,0.0,4.0);
+				done = DriveStraight(24.0,initPositions[Middle][1],4.0);
 				break;
-		case 1: angle = atan2(ySign*60.0-drivePos.GetY(),70.0-drivePos.GetX());
+		case 2: angleToTurn = atan2(ySign*60.0-drivePos.GetY(),70.0-drivePos.GetX());
+				nc.SetAngle(angleToTurn);
 				done = true;
 				break;
-		case 2: done = Turn(angle);
+		case 3: turning = true;
+				nc.SetOmega(800);
+				done = Turn();
 				break;
-		case 3: 	//nc.SetAlpha(.003);
-				//nc.SetV0(1200);
+		case 4: 	nc.SetAlpha(.001);
+				nc.SetV0(1200);
+				turning = false;
+				nc.SetOmega(1200);
 				done = DriveStraight(70.0,ySign*60.0,4.0);
 				break;
-		case 4: ele.SetEPos(Elevator::Switch);
-				done = Turn(0.0);
+		case 5: angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				turning = true;
+				ele.SetEPos(Elevator::Switch);
+				done = true;
 				break;
-		case 5: 	nc.SetAlpha(.005);
+		case 6:	nc.SetOmega(2000);
+				done = Turn();
+				if(!(fabs(drivePos.GetPhi())<.02))
+				{
+					done = false;
+				}
+				break;
+		case 7: turning = false;
+				nc.SetAlpha(.005);
 				//nc.SetV0(1200);
-				done = DriveStraight(102.0,ySign*60.0,4.0);
+				ucm.Set_maxOmega(1200);
+				done = DriveStraight(85.0,drivePos.GetY(),4.0);
 				break;
-		case 6: autoStep++;
+		case 8: turning = false;
+				autoStep++;
 				autoTimer.Start();
 				break;
-		case 7:	claw.Shoot(.5);
+		case 9:	turning = false;
+				claw.Shoot(.5);
 				if(autoTimer.Get()>0.5)
 				{
 					autoTimer.Stop();
 					autoStep++;
 				}
 				break;
-		case 8: claw.Shoot(0.0);
+		case 10: turning = false;
+				claw.Shoot(0.0);
 				autoStep++;
 				break;
 //*/
@@ -555,13 +670,26 @@ public:
 		}
 	}
 
+	bool Turn()
+	{
+		vv.w = nc.Turn();
+		vv.v = 0;
+		dmc = ucm.DifferentialOutput(vv);
+		if(nc.GetAvgPIDError()<.02 && nc.GetPIDError()<.02)//less than 2 deg error
+		{
+			return true;
+		}
+		return false;
+	}
+
 	bool Turn(double angle)
 	{
+
 		turnErr = angle-drivePos.GetPhi();
 		vv = ucm.Tracker(nc.Turn(angle));
 		dmc = ucm.DifferentialOutput(vv);
 		SmartDashboard::PutNumber("Turning Error", sqrt(turnErr*turnErr));
-		if(sqrt(turnErr*turnErr)<.04)//less than 2 deg error
+		if(sqrt(turnErr*turnErr)<.04 && vv.w<100.0)//less than 2 deg error
 		{
 			return true;
 		}
@@ -658,14 +786,14 @@ public:
 	}AutoRoutine;
 	typedef enum
 	{
-		Middle,
-		Left,
-		Right
+		Middle = 0,
+		Left = 1,
+		Right = 2
 	}StartingSpot;
 
 	frc::SendableChooser<AutoRoutine> autoGoal;
-	const std::string autoGoal0 = "Straight";
-	const std::string autoGoal1 = "Switch";
+	const std::string autoGoal1 = "Straight";
+	const std::string autoGoal0 = "Switch";
 	const std::string autoGoal2 = "Scale";
 	const std::string autoGoal3 = "Best (Tie Break Switch)";
 	const std::string autoGoal4 = "Best (Tie Break Scale)";
@@ -693,6 +821,8 @@ public:
 	bool scale;
 	bool theirSwitch;
 
+	double initPositions[3][2];
+
 	//Nav coefficients
 	double v0 = 12.0;
 	double alpha = 1.0;
@@ -703,7 +833,7 @@ public:
 	double oldLDrivePos, oldRDrivePos;
 	Pose2D drivePos;
 	bool turning;
-	double angle;
+	double angleToTurn;
 
 	DifferentialMotorCommand dmc;
 	VelocityVector vv;

@@ -16,6 +16,18 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	eTalon.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0, kTimeOut);
 
+	eTalon.ConfigForwardLimitSwitchSource(
+			RemoteLimitSwitchSource::RemoteLimitSwitchSource_RemoteTalonSRX,
+			LimitSwitchNormal::LimitSwitchNormal_NormallyOpen,
+			eSTalon.GetDeviceID(),
+			10
+		);
+	eTalon.ConfigReverseLimitSwitchSource(
+			RemoteLimitSwitchSource::RemoteLimitSwitchSource_RemoteTalonSRX,
+			LimitSwitchNormal::LimitSwitchNormal_NormallyClosed,
+			eSTalon.GetDeviceID(),
+			10
+		);
 	eSTalon.Follow(eTalon);
 
 	//Elevator Inversion
@@ -68,13 +80,13 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	//Up moves
 	eTalon.Config_kF(0,0,kTimeOut);
-	eTalon.Config_kP(0,.15,kTimeOut);
+	eTalon.Config_kP(0,.3,kTimeOut);//original @.15
 	eTalon.Config_kI(0,0,kTimeOut);
-	eTalon.Config_kD(0,0.1,kTimeOut);
+	eTalon.Config_kD(0,0.2,kTimeOut);//original @ .2
 
 	//Down Moves
 	eTalon.Config_kF(1,0,kTimeOut);
-	eTalon.Config_kP(1,.05,kTimeOut);
+	eTalon.Config_kP(1,.1,kTimeOut);//original @.05
 	eTalon.Config_kI(1,0,kTimeOut);
 	eTalon.Config_kD(1,0.5,kTimeOut);
 
@@ -177,6 +189,10 @@ void Elevator::SetMotorSpeed(double speed)
 }
 void Elevator::SetPosition(double pos)
 {
+	if(pos>posVals[EPos::Top][0])
+	{
+		pos = posVals[EPos::Top][0];
+	}
 	//eTalon.GetClosedLoopTarget(0);
 	eTalon.Set(ControlMode::Position, pos);
 }
