@@ -104,16 +104,16 @@ double 	NavController::Turn()
 	double out = catcher.GetOutput();
 	SmartDashboard::PutNumber("out", out);
 	SmartDashboard::PutNumber("fabs err", fabs(headingPID.GetError()));
-	if(fabs(headingPID.GetError())>.02 && fabs(out)<450.0)
+	if(fabs(headingPID.GetError())>.02 && fabs(out)<550.0)
 	{
 		SmartDashboard::PutString("Debug Statement", "YUP!");
 
 		if(out<0)
 		{
-			out = -450.0;
+			out = -550.0;
 		}else
 		{
-			out = 450.0;
+			out = 550.0;
 		}
 
 	}else

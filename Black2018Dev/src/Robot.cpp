@@ -610,6 +610,7 @@ public:
 				//nc.SetV0(1200);
 				ucm.Set_maxOmega(1200);
 				done = DriveStraight(85.0,drivePos.GetY(),4.0);
+				vv.w=0;
 				break;
 		case 8: turning = false;
 				autoStep++;
@@ -672,10 +673,11 @@ public:
 
 	bool Turn()
 	{
+		double e = angleToTurn - drivePos.GetPhi();
 		vv.w = nc.Turn();
 		vv.v = 0;
 		dmc = ucm.DifferentialOutput(vv);
-		if(nc.GetAvgPIDError()<.02 && nc.GetPIDError()<.02)//less than 2 deg error
+		if(fabs(e)<.02)//less than 1 deg error
 		{
 			return true;
 		}
