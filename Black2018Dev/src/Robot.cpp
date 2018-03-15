@@ -66,6 +66,8 @@ public:
 		startSpot.AddObject(spotRight,StartingSpot::Right);
 		frc::SmartDashboard::PutData("Starting Spot", &startSpot);
 
+		autoDetermined = false;
+
 		nc.SetV0(v0);
 		nc.SetAlpha(alpha);
 		nc.SetOmega(1200);
@@ -96,25 +98,127 @@ public:
 		initPositions[StartingSpot::Middle][0] = 0.0;//X value
 		initPositions[StartingSpot::Middle][1] = -7.0;//y value
 		initPositions[StartingSpot::Left][0] = 0.0;//X value
-		initPositions[StartingSpot::Left][1] = -8.0;//y value
+		initPositions[StartingSpot::Left][1] = 142.70;//y value
 		initPositions[StartingSpot::Right][0] = 0.0;//X value
-		initPositions[StartingSpot::Right][1] = -8.0;//y value
+		initPositions[StartingSpot::Right][1] = -142.7;//y value
 
 		GetFMSData();
 		SendData();
 	}
 
+	void DetermineAuto()
+	{
+		if(gotData && !autoDetermined)
+		{
+			if(spotSelected == Middle)
+			{
+				if(autoSelected != Straight)
+				{autoSelected = MidSwitch;}
+				autoDetermined = true;
+			}
+			if(spotSelected == Left)
+			{
+				switch(autoSelected)
+				{
+				case Switch: if(!ourSwitch)
+							{autoSelected = FarSwitch;}
+							break;
+				case Scale: if(!scale)
+							{autoSelected = FarScale;}
+							break;
+				case BestSwitch:	if(ourSwitch)
+								{autoSelected = Switch;}
+								if(!ourSwitch&&scale)
+								{autoSelected = Scale;}
+								if(!ourSwitch&&!scale)
+								{autoSelected = FarSwitch;}
+								break;
+				case BestScale:	if(scale)
+								{autoSelected = Scale;}
+								if(ourSwitch&&!scale)
+								{autoSelected = Switch;}
+								if(!ourSwitch&&!scale)
+								{autoSelected = FarScale;}
+								break;
+				default: autoSelected = Straight;
+				}
+				autoDetermined = true;
+			}
+			if(spotSelected == Right)
+			{
+				switch(autoSelected)
+				{
+				case Switch: if(ourSwitch)
+							{autoSelected = FarSwitch;}
+							break;
+				case Scale: if(scale)
+							{autoSelected = FarScale;}
+							break;
+				case BestSwitch:	if(!ourSwitch)
+								{autoSelected = Switch;}
+								if(ourSwitch&&!scale)
+								{autoSelected = Scale;}
+								if(ourSwitch&&scale)
+								{autoSelected = FarSwitch;}
+								break;
+				case BestScale:	if(!scale)
+								{autoSelected = Scale;}
+								if(!ourSwitch&&scale)
+								{autoSelected = Switch;}
+								if(ourSwitch&&scale)
+								{autoSelected = FarScale;}
+								break;
+				default: autoSelected = Straight;
+				}
+				autoDetermined = true;
+			}
+		}
+	}
 	void AutonomousInit() override
 	{
 		ResetPose();
 		GetFMSData();
+
+		autoDetermined=false;
+
+		autoSelected = autoGoal.GetSelected();
+		spotSelected = startSpot.GetSelected();
+
+		DetermineAuto();
+
 		SendData();
 	}
 
 	void AutonomousPeriodic()
 	{
 		UpdateDrivePos();
-		AutoStraight();
+		if(gotData && autoDetermined)
+		{
+			switch(autoSelected)
+			{
+			case Straight: 	AutoStraight();
+							break;
+			case MidSwitch: 	AutoMidSwitch();
+							break;
+			case Switch:		AutoNearSideSwitch();
+							break;
+			case Scale:		AutoNearSideScale();
+							break;
+			case FarScale:	AutoFarSideScale();
+							break;
+			case FarSwitch:	AutoFarSideSwitch();
+							break;
+			}
+
+
+		}else
+		{
+			GetFMSData();
+			DetermineAuto();
+		}
+
+		drive.Set(dmc);
+
 		SendData();
 	}
 
@@ -234,8 +338,106 @@ public:
 	}
 
 	void TestPeriodic() {
+		UpdateDrivePos();
 
-		SendData();
+
+		double rt= stick2.GetTriggerAxis(frc::GenericHID::kRightHand);
+		double lt= stick2.GetTriggerAxis(frc::GenericHID::kLeftHand);
+		double s = 0.0;
+		if(!stick3.GetBButton())
+		{
+			if(lt>.1)
+			{
+				claw.Shoot(lt);
+				s = lt;
+			}else
+			{
+				if(rt>.1)
+				{
+					claw.Feed(rt*2.0);
+					s = rt;
+				}else
+				{
+					claw.Shoot(0.0);
+					s = 0.0;
+				}
+			}
+		}
+
+		SmartDashboard::PutNumber("Claw Speed", s);
+
+		Vator();
+
+		if(stick3.GetAButtonPressed())
+		{
+			autoStep=0;
+			gotData = false;
+			ResetPose();
+			GetFMSData();
+		}
+
+
+
+		AutoMidSwitch();
+
+		if(stick3.GetBButton())
+		{
+			drive.Set(dmc);
+		}else
+		{
+			if(stick3.GetXButton())
+			{
+				//dmc = ucm.GetDifferentialMotorCommand(.5);
+				drive.Set(ucm.GetDifferentialMotorCommand(500.0));
+			}else
+			{
+				if(stick3.GetYButton())
+				{
+					nc.SetAngle(0.0);
+					vv.w=nc.Turn();
+					vv.v = 0.0;
+					dmc = ucm.DifferentialOutput(vv);
+					drive.Set(dmc);
+				}else
+				{
+					double x = stick3.GetX(frc::GenericHID::kRightHand);
+					double y = -stick3.GetY(frc::GenericHID::kRightHand);
+					if(sqrt(x*x+y*y)>.2)
+					{
+						vv.v = y;
+						vv.w = x;
+						drive.Set(ucm.DifferentialOutput(vv));
+					}
+					else
+					{
+						Drive();
+					}
+
+				}
+			}
+
+		}
+
+		if(stick3.GetBumperPressed(frc::GenericHID::kRightHand))
+		{
+			autoStep++;
+		}
+		if(stick3.GetBumperPressed(frc::GenericHID::kLeftHand))
+		{
+			autoStep=30;
+
+		}
+/*
+		double foo = -stick3.GetY(frc::GenericHID::kLeftHand);
+		if(fabs(foo)<.2)
+		{
+			foo = 0;
+		}
+
+		ele.SetMotorSpeed(foo);
+*/
+		//Drive();
+		v.VibrateTimer();
 	}
 
 	void DisabledPeriodic()
@@ -284,7 +486,7 @@ public:
 		nc.SetP(prefs->GetDouble("NC P",nc.GetP()));
 		nc.SetI(prefs->GetDouble("NC I",nc.GetI()));
 		nc.SetD(prefs->GetDouble("NC D",nc.GetD()));
-
+/*
 		double lf,lp,li,ld,rf,rp,ri,rd;
 		lf = drive.GetLeftF();
 		lp = drive.GetLeftP();
@@ -303,15 +505,15 @@ public:
 		rp = prefs->GetDouble("Drive Right P",rp);
 		ri = prefs->GetDouble("Drive Right I",ri);
 		rd = prefs->GetDouble("Drive Right D",rd);
-
+*/
 		drivePos.SendData("Drive Pose");
-		ele.SendData();
+		//ele.SendData();
 		//claw.SendData();
 		//drive.SendData();
 
 		SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
 
-		SmartDashboard::PutNumber("Turn Avg Err",nc.GetAvgPIDError());
+		SmartDashboard::PutNumber("autoSelected", autoSelected);
 
 		std::string data;
 		data = DriverStation::GetInstance().GetGameSpecificMessage();
@@ -350,6 +552,8 @@ public:
 
 		SmartDashboard::PutNumber("Robot DMC VL:", dmc.VL);
 		SmartDashboard::PutNumber("Robot DMC VR:", dmc.VR);
+
+
 	}
 
 	void UpdateDrivePos()
@@ -548,21 +752,117 @@ public:
 		return atan2(sin(angle),cos(angle));
 	}
 
+	void AutoNearSideScale()
+	{
 
-	void AutoMidSwitch()
+	}
+
+	void AutoFarSideScale()
+	{
+
+	}
+
+	void AutoFarSideSwitch()
+	{
+
+	}
+
+	void AutoNearSideSwitch()
 	{
 		bool done = false;
-
 
 		double ySign = 1.0;//used to flip the Y value
 		if(!ourSwitch)
 		{
 			ySign = -1.0;
 		}
-
 		ucm.Set_maxOmega(2000);
 
+		switch(autoStep)
+		{
+		case 0: turning = false;
+				ele.SetEPos(Elevator::Bottom);
+				autoStep++;
+				break;
+		case 1: turning = false;
+				angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				nc.SetAlpha(.005);
+				ele.SetEPos(Elevator::Travel);
+				//nc.SetV0(1200);
+				done = DriveStraight(180.0,initPositions[spotSelected][1],4.0);
+				break;
+		case 2: angleToTurn = -ySign*3.14159/2;
+				nc.SetAngle(angleToTurn);
+				done = true;
+				break;
+		case 3: turning = true;
+				nc.SetOmega(800);
+				done = Turn();
+				break;
+		case 4: 	nc.SetAlpha(.001);
+				nc.SetV0(1200);
+				turning = false;
+				nc.SetOmega(1200);
+				done = DriveStraight(drivePos.GetX(),ySign*60.0,4.0);
+				break;
+		case 5: angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				turning = true;
+				ele.SetEPos(Elevator::Switch);
+				done = true;
+				break;
+		case 6:	nc.SetOmega(2000);
+				done = Turn();
+				if(!(fabs(drivePos.GetPhi())<.02))
+				{
+					done = false;
+				}
+				break;
+		case 7: turning = false;
+				nc.SetAlpha(.005);
+				//nc.SetV0(1200);
+				ucm.Set_maxOmega(1200);
+				done = DriveStraight(85.0,drivePos.GetY(),4.0);
+				vv.w=0;
+				break;
+		case 8: turning = false;
+				autoStep++;
+				autoTimer.Start();
+				break;
+		case 9:	turning = false;
+				claw.Shoot(.5);
+				if(autoTimer.Get()>0.5)
+				{
+					autoTimer.Stop();
+					autoStep++;
+				}
+				break;
+		case 10: turning = false;
+				claw.Shoot(0.0);
+				autoStep++;
+				break;
+//*/
+		default: dmc.VL = 0.0; dmc.VR=0.0;
+		}
 
+		if(done)
+		{
+			done = false;
+			autoStep++;
+		}
+	}
+
+	void AutoMidSwitch()
+	{
+		bool done = false;
+
+		double ySign = 1.0;//used to flip the Y value
+		if(!ourSwitch)
+		{
+			ySign = -1.0;
+		}
+		ucm.Set_maxOmega(2000);
 
 		switch(autoStep)
 		{
@@ -785,6 +1085,9 @@ public:
 		Scale,
 		BestSwitch,
 		BestScale,
+		FarSwitch,
+		FarScale,
+		MidSwitch
 	}AutoRoutine;
 	typedef enum
 	{
@@ -800,6 +1103,7 @@ public:
 	const std::string autoGoal3 = "Best (Tie Break Switch)";
 	const std::string autoGoal4 = "Best (Tie Break Scale)";
 	AutoRoutine autoSelected;
+	bool autoDetermined;
 
 	frc::SendableChooser<StartingSpot> startSpot;
 	const std::string spotMid   = "Middle";
@@ -842,7 +1146,7 @@ public:
 	Vector2D goal;
 	Vector2D u;
 
-	BNO055 imu{I2C::Port::kOnboard};
+	BNO055 imu{I2C::Port::kMXP};
 
 	NavController nc{&drivePos};
 	UnicycleController ucm{&drivePos};
