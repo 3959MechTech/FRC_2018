@@ -55,6 +55,11 @@ public:
 	double GetHeight(EPos);
 	double GetRamp(EPos);
 
+	bool GetBottomLimitSwitch(){return eTalon.GetSensorCollection().IsRevLimitSwitchClosed();};
+	bool GetBottomSlaveLimitSwitch(){return !eSTalon.GetSensorCollection().IsRevLimitSwitchClosed();};
+	bool GetTopLimitSwitch(){return eTalon.GetSensorCollection().IsFwdLimitSwitchClosed();};
+	bool GetTopSlaveLimitSwitch(){return eSTalon.GetSensorCollection().IsFwdLimitSwitchClosed();};
+
 	void SetMaxRamp(double ramp);
 
 	//void eZeroed();
