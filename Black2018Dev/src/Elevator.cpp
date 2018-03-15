@@ -12,7 +12,14 @@
 
 Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(slaveMotor)
 {
-	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,1,0,0,kTimeOut);
+	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,0,0,0,kTimeOut);
+
+	eSTalon.ConfigForwardLimitSwitchSource(LimitSwitchSource::LimitSwitchSource_FeedbackConnector,
+											LimitSwitchNormal::LimitSwitchNormal_NormallyOpen,
+											kTimeOut);
+	eSTalon.ConfigReverseLimitSwitchSource(LimitSwitchSource::LimitSwitchSource_FeedbackConnector,
+											LimitSwitchNormal::LimitSwitchNormal_NormallyClosed,
+											kTimeOut);
 
 	eTalon.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0, kTimeOut);
 
@@ -28,6 +35,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 			eSTalon.GetDeviceID(),
 			10
 		);
+
 	eSTalon.Follow(eTalon);
 
 	//Elevator Inversion
@@ -102,6 +110,8 @@ void Elevator::SendData(std::string name)
 	SmartDashboard::PutNumber(name+" raw position", eTalon.GetSensorCollection().GetQuadraturePosition());
 	SmartDashboard::PutBoolean(name+" Top Limit Switch", eTalon.GetSensorCollection().IsFwdLimitSwitchClosed());
 	SmartDashboard::PutBoolean(name+" Bottom Limit Switch", eTalon.GetSensorCollection().IsRevLimitSwitchClosed());
+	SmartDashboard::PutBoolean(name+" Slave Top Limit Switch", GetTopSlaveLimitSwitch());
+	SmartDashboard::PutBoolean(name+" Slave Bottom Limit Switch", GetBottomSlaveLimitSwitch());
 
 	SmartDashboard::PutNumber(name+" Closed Loop Error", eTalon.GetClosedLoopError(0));
 	SmartDashboard::PutNumber(name+" Closed Loop Target", eTalon.GetClosedLoopTarget(0));
