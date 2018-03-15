@@ -62,6 +62,14 @@ void 	NavController::SetAngle(double angle)
 {
 	_angle=atan2(sin(angle),cos(angle));
 	headingPID.SetSetpoint(_angle);
+	headingPID.Reset();
+	headingPID.Enable();
+}
+
+void 	NavController::UpdateAngle(double angle)
+{
+	_angle=atan2(sin(angle),cos(angle));
+	headingPID.SetSetpoint(_angle);
 }
 
 Vector2D 	NavController::GoToGoal(double x, double y)

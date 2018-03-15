@@ -63,6 +63,7 @@ public:
 	void SetAlpha(double val){alpha=val;};
 	void SetOmega(double val){maxOmega=val; headingPID.SetOutputRange(-val,val);};
 	void SetAngle(double angle);
+	void UpdateAngle(double angle);
 
 	void 	SetP(double p){headingPID.SetP(p);};
 	void 	SetI(double i){headingPID.SetI(i);};
@@ -76,7 +77,7 @@ public:
 	double GetOmega(){return maxOmega;};
 	double GetAngle(){return _angle;};\
 	double GetPIDError(){return headingPID.GetError();};
-	double GetAvgPIDError(){return headingPID.GetAvgError();};
+
 
 	double Turn(double phi);
 	double Turn();
