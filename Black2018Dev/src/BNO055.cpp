@@ -57,7 +57,7 @@ BNO055::BNO055(I2C::Port port, int deviceAddress ):
 		calData[i]=0.0;
 	}
 
-	Enable();
+	//Enable();
 	//Begin();
 }
 

@@ -12,7 +12,7 @@
 //#include <support/mutex.h>
 #include <WPILib.h>
 
-class Pose2D
+class Pose2D: public PIDSource
 {
 
 private:
@@ -24,6 +24,11 @@ public:
 
 	Pose2D(){_x=0.0;_y=0.0;_phi=0.0;};
 	Pose2D(double x, double y, double phi){_x=x;_y=y;_phi=phi;};
+
+	virtual ~Pose2D()
+	{
+
+	}
 
 	void SetX(double val)
 	{
@@ -55,6 +60,12 @@ public:
 		return _y;
     };
     double GetPhi()
+    {
+    		std::lock_guard<wpi::mutex> sync(m_mutex);
+    		return _phi;
+    }
+
+    virtual double PIDGet() override
     {
     		std::lock_guard<wpi::mutex> sync(m_mutex);
     		return _phi;

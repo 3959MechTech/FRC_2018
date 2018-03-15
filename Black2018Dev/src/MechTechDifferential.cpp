@@ -147,8 +147,8 @@ double MechTechDifferential::GetWheelPos(WheelType w)
 void	 MechTechDifferential::Set(double VR, double VL)
 {
 
-	rM->Set(ControlMode::Velocity,VR*1500.0);
-	lM->Set(ControlMode::Velocity,VL*1500.0);
+	rM->Set(ControlMode::Velocity,VR*1400.0);
+	lM->Set(ControlMode::Velocity,VL*1400.0);
 
 	/*
 	rM->Set(ControlMode::PercentOutput,VR);
@@ -178,11 +178,28 @@ double MechTechDifferential::GetRightEncoderPosition()
 
 void MechTechDifferential::SetLeftVelocity(double speed)
 {
+	/*
+	if(speed>0)
+	{
+		lM->SelectProfileSlot(0,0);
+	}else
+	{
+		lM->SelectProfileSlot(1,0);
+	}*/
 	lM->Set(ControlMode::Velocity,speed);
 }
 
 void MechTechDifferential::SetRightVelocity(double speed)
 {
+	/*
+	if(speed>0)
+	{
+		rM->SelectProfileSlot(0,0);
+	}else
+	{
+		rM->SelectProfileSlot(1,0);
+	}
+	*/
 	rM->Set(ControlMode::Velocity,speed);
 }
 
@@ -245,13 +262,27 @@ void MechTechDifferential::SetLeftFPID(double F, double P, double I, double D)
 	lM->Config_kI(0,I,10);
 	lM->Config_kD(0,D,10);
 }
-
+void MechTechDifferential::SetLeftFPID(double F, double P, double I, double D, int slot)
+{
+	lM->Config_kF(slot,F,10);
+	lM->Config_kP(slot,P,10);
+	lM->Config_kI(slot,I,10);
+	lM->Config_kD(slot,D,10);
+}
 void MechTechDifferential::SetRightFPID(double F, double P, double I, double D)
 {
 	rM->Config_kF(0,F,10);
 	rM->Config_kP(0,P,10);
 	rM->Config_kI(0,I,10);
 	rM->Config_kD(0,D,10);
+}
+
+void MechTechDifferential::SetRightFPID(double F, double P, double I, double D, int slot)
+{
+	rM->Config_kF(slot,F,10);
+	rM->Config_kP(slot,P,10);
+	rM->Config_kI(slot,I,10);
+	rM->Config_kD(slot,D,10);
 }
 
 void MechTechDifferential::SendData(std::string name )
@@ -261,8 +292,8 @@ void MechTechDifferential::SendData(std::string name )
 	SmartDashboard::PutNumber(name+" Right Velocity", rM->GetSelectedSensorVelocity(0));
 	SmartDashboard::PutNumber(name+" Right Position", rM->GetSelectedSensorPosition(0));
 
-	SmartDashboard::PutNumber(name+" Left raw position", lM->GetSensorCollection().GetQuadraturePosition());
-	SmartDashboard::PutNumber(name+" Right raw position", rM->GetSensorCollection().GetQuadraturePosition());
+	//SmartDashboard::PutNumber(name+" Left raw position", lM->GetSensorCollection().GetQuadraturePosition());
+	//SmartDashboard::PutNumber(name+" Right raw position", rM->GetSensorCollection().GetQuadraturePosition());
 
 	SmartDashboard::PutNumber(name+" Left Closed Loop Error", lM->GetClosedLoopError(0));
 	SmartDashboard::PutNumber(name+" Left Closed Loop Target", lM->GetClosedLoopTarget(0));
@@ -270,19 +301,21 @@ void MechTechDifferential::SendData(std::string name )
 	SmartDashboard::PutNumber(name+" Right Closed Loop Target", rM->GetClosedLoopTarget(0));
 
 	SmartDashboard::PutNumber(name+" Left Ramp Closed",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eClosedloopRamp,0,10));
-	SmartDashboard::PutNumber(name+" Left Ramp Open",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eOpenloopRamp,0,10));
+	//SmartDashboard::PutNumber(name+" Left Ramp Open",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eOpenloopRamp,0,10));
 	SmartDashboard::PutNumber(name+" Right Ramp Closed",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eClosedloopRamp,0,10));
-	SmartDashboard::PutNumber(name+" Right Ramp Open",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eOpenloopRamp,0,10));
+	//SmartDashboard::PutNumber(name+" Right Ramp Open",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eOpenloopRamp,0,10));
 
-	SmartDashboard::PutNumber(name+" Left F",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_F,0,10));
-	SmartDashboard::PutNumber(name+" Left P",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,10));
-	SmartDashboard::PutNumber(name+" Left I",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
-	SmartDashboard::PutNumber(name+" Left D",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
+	//SmartDashboard::PutNumber(name+" Left F",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_F,0,10));
+	//SmartDashboard::PutNumber(name+" Left P",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,10));
+	//SmartDashboard::PutNumber(name+" Left I",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
+	//SmartDashboard::PutNumber(name+" Left D",lM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
 
-	SmartDashboard::PutNumber(name+" Right F",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_F,0,10));
-	SmartDashboard::PutNumber(name+" Right P",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,10));
-	SmartDashboard::PutNumber(name+" Right I",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
-	SmartDashboard::PutNumber(name+" Right D",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
+	//SmartDashboard::PutNumber(name+" Right F",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_F,0,10));
+	//SmartDashboard::PutNumber(name+" Right P",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,10));
+	//SmartDashboard::PutNumber(name+" Right I",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
+	//SmartDashboard::PutNumber(name+" Right D",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
+
+	SmartDashboard::PutNumber(name+" R vs L Speed", rM->GetSelectedSensorVelocity(0)-lM->GetSelectedSensorVelocity(0));
 
 }
 

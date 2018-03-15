@@ -11,7 +11,6 @@ Claw::Claw(int leftMotor, int rightMotor, int sensorport): lm(leftMotor), rm(rig
 {
 	lm.SetInverted(false);
 	//rm.Follow(lm);
-	rm.Follow(rm);
 	rm.SetInverted(true);
 }
 
@@ -23,18 +22,20 @@ void Claw::Shoot(double speed)
 
 bool Claw::Feed(double speed)
 {
+/*
 	if(!sensor.Get())
 	{
-		lm.Set(ControlMode::PercentOutput, -speed*.8);
+*/		lm.Set(ControlMode::PercentOutput, -speed*.8);
 		rm.Set(ControlMode::PercentOutput, -speed);
 		return true;
-	}else
+/*	}else
 	{
+
 		lm.Set(ControlMode::PercentOutput, -0.2);
 		rm.Set(ControlMode::PercentOutput, -0.3);
 		return false;
 	}
-
+*/
 }
 
 void Claw::SendData(std::string name)

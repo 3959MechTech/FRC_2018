@@ -28,17 +28,30 @@ public:
 	double GetX(){return _x;};
 	double GetY(){return _y;};
 
-//I know public members are a bad idea. it's fine.
-private:
+	double GetMag(){return sqrt(_x*_x+_y*_y);};
 
-	double _x;
-	double _y;
 
 	void operator=(const Vector2D& v)
 	{
 		_x = v._x;
 		_y = v._y;
 	}
+
+	void operator-(const Vector2D& v)
+	{
+		_x = _x-v._x;
+		_y = _y-v._y;
+	}
+	void operator+(const Vector2D& v)
+	{
+		_x = _x+v._x;
+		_y = _y+v._y;
+	}
+private:
+
+	double _x;
+	double _y;
+
 };
 
 

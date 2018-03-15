@@ -13,7 +13,7 @@
 UnicycleController::UnicycleController(Pose2D* pose)
 {
 	robotPose = pose;
-	_maxOmega = 3.14159;
+	_maxOmega = 1500.0;
 	_wheelBase=24.0;
 	_wheelRadius=2.0;
 	_transformL = .1;
@@ -22,7 +22,8 @@ UnicycleController::UnicycleController(Pose2D* pose)
  VelocityVector UnicycleController::Tracker(double x,double y)
  {
  	VelocityVector output;
-
+ 	output.v = sqrt(x*x+y*y);
+ 	output.w = _maxOmega*atan2(y,x);
 
 
  	return output;
@@ -32,8 +33,9 @@ UnicycleController::UnicycleController(Pose2D* pose)
  {
 	VelocityVector output;
 	output.v=0.0;
+	phi = atan2(sin(phi),cos(phi));
 
-	output.w = phi/_maxOmega;
+	output.w = phi*_maxOmega;
 
 	return output;
  }
@@ -57,8 +59,9 @@ UnicycleController::UnicycleController(Pose2D* pose)
  {
  	VelocityVector output;
  	output.v=0.0;
+ 	phi = atan2(sin(phi),cos(phi));
 
- 	output.w = phi/_maxOmega;
+ 	output.w = -phi*_maxOmega;
 
  	return output;
  }
@@ -75,12 +78,12 @@ UnicycleController::UnicycleController(Pose2D* pose)
  DifferentialMotorCommand UnicycleController::GetDifferentialMotorCommand(double x,double y)
  {
 
-	return DifferentialOutput(Transform(x,y));
+	return DifferentialOutput(Tracker(x,y));
 
  }
  DifferentialMotorCommand UnicycleController::GetDifferentialMotorCommand(double phi)
  {
 	 double p = atan2(sin(phi), cos(phi));
-	 return DifferentialOutput(Transform(p));
+	 return DifferentialOutput(Tracker(p));
  }
 
