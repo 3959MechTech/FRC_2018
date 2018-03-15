@@ -13,14 +13,14 @@
 Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(slaveMotor)
 {
 	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,0,0,0,kTimeOut);
-
+/*
 	eSTalon.ConfigForwardLimitSwitchSource(LimitSwitchSource::LimitSwitchSource_FeedbackConnector,
 											LimitSwitchNormal::LimitSwitchNormal_NormallyOpen,
 											kTimeOut);
 	eSTalon.ConfigReverseLimitSwitchSource(LimitSwitchSource::LimitSwitchSource_FeedbackConnector,
 											LimitSwitchNormal::LimitSwitchNormal_NormallyClosed,
 											kTimeOut);
-
+*/
 	eTalon.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0, kTimeOut);
 
 	eTalon.ConfigForwardLimitSwitchSource(
