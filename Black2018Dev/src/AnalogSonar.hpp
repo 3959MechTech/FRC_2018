@@ -15,7 +15,7 @@ private:
 		int		 	m_channel;
         float		m_voltsPerInch;
 		float		m_DistanceOffset;
-		bool		m_allocatedChannel;
+		bool			m_allocatedChannel;
 
 public:
 	//explicit DistanceSensor(uint32_t channel);
@@ -30,12 +30,12 @@ public:
 	float	GetDistanceOffset(){return m_DistanceOffset;};
 	int		GetSampleRate(){return m_sensor->GetSampleRate();};
 
-	void	setDistanceOffset(float offset){m_DistanceOffset = offset;}
+	void		setDistanceOffset(float offset){m_DistanceOffset = offset;}
 	void 	setVoltsPerInch(float vdp){m_voltsPerInch = vdp;}
 
-	void UpdateTable();
-	void StartLiveWindowMode(){};
-	void StopLiveWindowMode(){};
+	void 	UpdateTable();
+	void 	StartLiveWindowMode(){};
+	void 	StopLiveWindowMode(){};
 	std::string GetSmartDashboardType(){return "AnalogInput";};
 
 

@@ -67,12 +67,12 @@ float AnalogSonar::GetDistance()
 	return (m_sensor->GetAverageVoltage())/m_voltsPerInch;
 }
 
-/*
+
 double AnalogSonar::PIDGet()
 {
 	return GetDistance();
 }
-*/
+
 
 
 
