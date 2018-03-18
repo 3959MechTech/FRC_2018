@@ -28,6 +28,7 @@
 #include "Vector2D.hpp"
 #include "BNO055.hpp"
 #include "NavController.hpp"
+#include "AnalogSonar.hpp"
 
 
 #define vibStrength 10000
@@ -51,6 +52,8 @@ public:
 
 		camera0.SetResolution(640,480);
 		camera1.SetResolution(640,480);
+		camera0.SetFPS(10);
+		camera1.SetFPS(10);
 
 		SetPeriod(.005);
 
@@ -200,7 +203,7 @@ public:
 							break;
 			case MidSwitch: 	AutoMidSwitch();
 							break;
-			case Switch:		AutoNearSideSwitch();
+			case Switch:	AutoNearSideSwitch();
 							break;
 			case Scale:		AutoNearSideScale();
 							break;
@@ -265,10 +268,11 @@ public:
 
 
 
-		AutoMidSwitch();
+		//
 
 		if(stick3.GetBButton())
 		{
+			AutoMidSwitch();
 			drive.Set(dmc);
 		}else
 		{
@@ -315,14 +319,14 @@ public:
 
 		}
 /*
-		double foo = -stick3.GetY(frc::GenericHID::kLeftHand);
+		double foo = -stick2.GetY(frc::GenericHID::kLeftHand);
 		if(fabs(foo)<.2)
 		{
 			foo = 0;
 		}
 
 		ele.SetMotorSpeed(foo);
-*/
+//*/
 		//Drive();
 		v.VibrateTimer();
 
@@ -343,6 +347,7 @@ public:
 
 		double rt= stick2.GetTriggerAxis(frc::GenericHID::kRightHand);
 		double lt= stick2.GetTriggerAxis(frc::GenericHID::kLeftHand);
+/*
 		double s = 0.0;
 		if(!stick3.GetBButton())
 		{
@@ -378,10 +383,11 @@ public:
 
 
 
-		AutoMidSwitch();
+
 
 		if(stick3.GetBButton())
 		{
+			AutoMidSwitch();
 			drive.Set(dmc);
 		}else
 		{
@@ -427,8 +433,8 @@ public:
 			autoStep=30;
 
 		}
-/*
-		double foo = -stick3.GetY(frc::GenericHID::kLeftHand);
+*/
+/*		double foo = -stick3.GetY(frc::GenericHID::kLeftHand);
 		if(fabs(foo)<.2)
 		{
 			foo = 0;
@@ -437,7 +443,7 @@ public:
 		ele.SetMotorSpeed(foo);
 */
 		//Drive();
-		v.VibrateTimer();
+	//	v.VibrateTimer();
 	}
 
 	void DisabledPeriodic()
@@ -446,6 +452,7 @@ public:
 		{
 			ResetPose();
 		}
+		autoStep = 0;
 
 		GetFMSData();
 		UpdateDrivePos();
@@ -464,9 +471,9 @@ public:
 		simx = prefs->GetDouble("simx",-1.0);
 		simy = prefs->GetDouble("simy",-1.0);
 		useSimData = prefs->GetBoolean("useSimData",false);
-		SmartDashboard::PutNumber("Put simx",simx);
-		SmartDashboard::PutNumber("Put simy",simy);
-		SmartDashboard::PutNumber("headingOffset",headingOffset);
+		//SmartDashboard::PutNumber("Put simx",simx);
+		//SmartDashboard::PutNumber("Put simy",simy);
+		//SmartDashboard::PutNumber("headingOffset",headingOffset);
 		SmartDashboard::PutNumber("Battery Power",DriverStation::GetInstance().GetBatteryVoltage());
 		SmartDashboard::PutNumber("autoStep",autoStep);
 
@@ -475,6 +482,8 @@ public:
 		SmartDashboard::PutNumber("NC PID Error", nc.GetPIDError());
 		SmartDashboard::PutNumber("Auto Angle Target", angleToTurn);
 		SmartDashboard::PutNumber("Auto Angle Error", CleanAngle(angleToTurn-drivePos.GetPhi()));
+
+		SmartDashboard::PutNumber("Front Sonar Distance", frontSonar.GetDistance());
 
 		v0 = prefs->GetDouble("v0",nc.GetV0());
 		alpha = prefs->GetDouble("alpha",nc.GetAlpha());
@@ -526,23 +535,6 @@ public:
 			SmartDashboard::PutBoolean("our scale", scale);
 			SmartDashboard::PutBoolean("other Switch", theirSwitch);
 		}
-		double ex = 120.0-drivePos.GetX();
-		double ey = 0.0-drivePos.GetY();
-		double emag =sqrt(ex*ex+ey*ey);
-		double k=(nc.GetV0()*(1.0-exp(-nc.GetAlpha()*emag*emag)))/emag;
-
-		SmartDashboard::PutNumber("Robot ex", ex);
-		SmartDashboard::PutNumber("Robot ey", ey);
-		//SmartDashboard::PutNumber("Robot v0", nc.GetV0());
-		//SmartDashboard::PutNumber("Robot alpha", nc.GetAlpha());
-		SmartDashboard::PutNumber("Robot emag", emag);
-		SmartDashboard::PutNumber("Robot v0*(1-exp(-alpha*ex*ex))", nc.GetV0()*(1-exp(-nc.GetAlpha()*ex*ex)));
-		SmartDashboard::PutNumber("Robot v0*(1-exp(-alpha*ey*ey))", nc.GetV0()*(1-exp(-nc.GetAlpha()*ey*ey)));
-		//SmartDashboard::PutNumber("Robot exp(-nc.GetAlpha()*emag*emag)", exp(-nc.GetAlpha()*emag*emag));
-		//SmartDashboard::PutNumber("Robot 1-exp(-nc.GetAlpha()*emag*emag)", 1.0-exp(-nc.GetAlpha()*emag*emag));
-		SmartDashboard::PutNumber("Robot k", k);
-		SmartDashboard::PutNumber("Robot ux", k*ex);
-		SmartDashboard::PutNumber("Robot uy", k*ey);
 
 		SmartDashboard::PutNumber("Robot U X", u.GetX());
 		SmartDashboard::PutNumber("Robot U Y", u.GetY());
@@ -701,6 +693,28 @@ public:
 			s2y = 0;
 		}*/
 
+		if(ele.GetEncoderPos()<ele.GetHeight(Elevator::ScaleLow))
+		{
+			drive.SetMaxSpeed(1.0);
+		}else
+		{
+			if(ele.GetEncoderPos()>ele.GetHeight(Elevator::ScaleMedium))
+			{
+				drive.SetMaxSpeed( ele.GetMaxSpeed(Elevator::ScaleHigh));
+			}else
+			{
+				if(ele.GetEncoderPos()>ele.GetHeight(Elevator::ScaleLow))
+				{
+					drive.SetMaxSpeed( ele.GetMaxSpeed(Elevator::ScaleMedium));
+				}else
+				{
+					drive.SetMaxSpeed( ele.GetMaxSpeed(Elevator::ScaleLow));
+				}
+			}
+			drive.SetMaxSpeed( ele.GetMaxSpeed(ele.GetEPos()));
+		}
+		//drive.SetMaxSpeed( ele.GetMaxSpeed(ele.GetEPos()));
+
 		//ele.SetMotorSpeed(s2y);
 	}
 
@@ -711,10 +725,11 @@ public:
 		autoSelected = autoGoal.GetSelected();//Get selected Auto Routine
 		spotSelected = startSpot.GetSelected();//Get selected Auto Routine
 
-		if(!gotData)
+		std::string data;
+		data = DriverStation::GetInstance().GetGameSpecificMessage();
+
+		//if(!gotData)
 		{
-			std::string data;
-			data = DriverStation::GetInstance().GetGameSpecificMessage();
 
 			if(data.length()>=3)
 			{
@@ -755,16 +770,59 @@ public:
 	void AutoNearSideScale()
 	{
 
+		AutoStraight();
+/*		bool done = false;
+
+				double ySign = 1.0;//used to flip the Y value
+				if(!ourSwitch)
+				{
+					ySign = -1.0;
+				}
+				ucm.Set_maxOmega(2000);
+
+				switch(autoStep)
+				{
+				case 0: turning = false;
+						ele.SetEPos(Elevator::Bottom);
+						autoStep++;
+						break;
+				case 1: turning = false;
+						angleToTurn = 0.0;
+						nc.SetAngle(angleToTurn);
+						nc.SetAlpha(.005);
+						ele.SetEPos(Elevator::Travel);
+						nc.SetV0(600);
+						done = DriveStraight(180.0,initPositions[spotSelected][1],4.0, true);
+						break;
+/*				case 2: angleToTurn = -ySign*3.14159/2.0;
+						nc.SetAngle(angleToTurn);
+						ele.SetEPos(Elevator::Switch);
+						done = true;
+						break;
+				case 3: turning = true;
+						nc.SetOmega(1200);
+						done = Turn();
+						break;
+
+				default: dmc.VL = 0.0; dmc.VR=0.0;
+				}
+
+				if(done)
+				{
+					done = false;
+					autoStep++;
+				}
+				*/
 	}
 
 	void AutoFarSideScale()
 	{
-
+		AutoStraight();
 	}
 
 	void AutoFarSideSwitch()
 	{
-
+		AutoStraight();
 	}
 
 	void AutoNearSideSwitch()
@@ -789,48 +847,29 @@ public:
 				nc.SetAngle(angleToTurn);
 				nc.SetAlpha(.005);
 				ele.SetEPos(Elevator::Travel);
-				//nc.SetV0(1200);
-				done = DriveStraight(180.0,initPositions[spotSelected][1],4.0);
-				break;
-		case 2: angleToTurn = -ySign*3.14159/2;
-				nc.SetAngle(angleToTurn);
-				done = true;
-				break;
-		case 3: turning = true;
-				nc.SetOmega(800);
-				done = Turn();
-				break;
-		case 4: 	nc.SetAlpha(.001);
 				nc.SetV0(1200);
-				turning = false;
-				nc.SetOmega(1200);
-				done = DriveStraight(drivePos.GetX(),ySign*60.0,4.0);
+				done = DriveStraight(120.0,initPositions[spotSelected][1],4.0, true);
 				break;
-		case 5: angleToTurn = 0.0;
+		case 2: angleToTurn = -ySign*3.14159/2.0;
 				nc.SetAngle(angleToTurn);
-				turning = true;
 				ele.SetEPos(Elevator::Switch);
 				done = true;
 				break;
-		case 6:	nc.SetOmega(2000);
+		case 3: turning = true;
+				nc.SetOmega(1200);
 				done = Turn();
-				if(!(fabs(drivePos.GetPhi())<.02))
-				{
-					done = false;
-				}
 				break;
-		case 7: turning = false;
-				nc.SetAlpha(.005);
-				//nc.SetV0(1200);
-				ucm.Set_maxOmega(1200);
-				done = DriveStraight(85.0,drivePos.GetY(),4.0);
-				vv.w=0;
+		case 4: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				done = ApproachWall(13.0,600.0);
 				break;
-		case 8: turning = false;
+		case 5: turning = false;
 				autoStep++;
 				autoTimer.Start();
 				break;
-		case 9:	turning = false;
+		case 6:	turning = false;
 				claw.Shoot(.5);
 				if(autoTimer.Get()>0.5)
 				{
@@ -838,9 +877,24 @@ public:
 					autoStep++;
 				}
 				break;
-		case 10: turning = false;
+		case 7: turning = false;
 				claw.Shoot(0.0);
 				autoStep++;
+				break;
+		case 8: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				done = ApproachWall(24.0,800);
+				break;
+		case 9: ele.SetEPos(Elevator::Bottom);
+				angleToTurn = -ySign*3.14159/4.0;
+				nc.SetAngle(angleToTurn);
+				done = true;
+				break;
+		case 10: turning = true;
+				nc.SetOmega(1200);
+				done = Turn();
 				break;
 //*/
 		default: dmc.VL = 0.0; dmc.VR=0.0;
@@ -876,9 +930,9 @@ public:
 				nc.SetAlpha(.005);
 				ele.SetEPos(Elevator::Travel);
 				//nc.SetV0(1200);
-				done = DriveStraight(24.0,initPositions[Middle][1],4.0);
+				done = DriveStraight(24.0,initPositions[Middle][1],4.0, true);
 				break;
-		case 2: angleToTurn = atan2(ySign*60.0-drivePos.GetY(),70.0-drivePos.GetX());
+		case 2: angleToTurn = atan2(ySign*70.0-drivePos.GetY(),70.0-drivePos.GetX());
 				nc.SetAngle(angleToTurn);
 				done = true;
 				break;
@@ -886,16 +940,16 @@ public:
 				nc.SetOmega(800);
 				done = Turn();
 				break;
-		case 4: 	nc.SetAlpha(.001);
+		case 4: nc.SetAlpha(.001);
 				nc.SetV0(1200);
 				turning = false;
+				ele.SetEPos(Elevator::Switch);
 				nc.SetOmega(1200);
-				done = DriveStraight(70.0,ySign*60.0,4.0);
+				done = DriveStraight(70.0,ySign*70.0,4.0, false);
 				break;
 		case 5: angleToTurn = 0.0;
 				nc.SetAngle(angleToTurn);
 				turning = true;
-				ele.SetEPos(Elevator::Switch);
 				done = true;
 				break;
 		case 6:	nc.SetOmega(2000);
@@ -908,8 +962,17 @@ public:
 		case 7: turning = false;
 				nc.SetAlpha(.005);
 				//nc.SetV0(1200);
-				ucm.Set_maxOmega(1200);
-				done = DriveStraight(85.0,drivePos.GetY(),4.0);
+				ucm.Set_maxOmega(1000);
+				done = ApproachWall(13.0,600);
+				if(frontSonar.GetDistance()<14.0)
+				{
+					done = true;
+				}else
+				{
+					done = false;
+				}
+
+						//DriveStraight(85.0,drivePos.GetY(),4.0, true);
 				vv.w=0;
 				break;
 		case 8: turning = false;
@@ -918,7 +981,7 @@ public:
 				break;
 		case 9:	turning = false;
 				claw.Shoot(.5);
-				if(autoTimer.Get()>0.5)
+				if(autoTimer.Get()>0.75)
 				{
 					autoTimer.Stop();
 					autoStep++;
@@ -927,6 +990,27 @@ public:
 		case 10: turning = false;
 				claw.Shoot(0.0);
 				autoStep++;
+				break;
+/*		case 11: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				done = DriveStraight(40.0,drivePos.GetY(),4.0, true);
+				break;
+		case 12: angleToTurn = atan2(ySign*20.0-drivePos.GetY(),60.0-drivePos.GetX());
+				nc.SetAngle(angleToTurn);
+				ele.SetEPos(Elevator::Bottom);
+				done = true;
+				break;
+		case 13: turning = true;
+				nc.SetOmega(800);
+				done = Turn();
+				break;
+		case 14: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				done = DriveStraight(70.0,ySign*70.0,4.0, false);
 				break;
 //*/
 		default: dmc.VL = 0.0; dmc.VR=0.0;
@@ -942,11 +1026,18 @@ public:
 	void AutoStraight()
 	{
 		nc.SetAlpha(.001);
-		nc.SetV0(1200);
-		DriveStraight(120.0,0.0,4.0);
+		nc.SetV0(1000);
+		ele.SetEPos(Elevator::Travel);
+		DriveStraight(120.0,0.0,4.0, true);
+		if((120.0 - drivePos.GetX())<2.0)
+		{
+			dmc.VL = 0.0;
+			dmc.VR = 0.0;
+			ele.SetEPos(Elevator::Switch);
+		}
 	}
 
-	bool DriveStraight(double x, double y, double errOk)
+	bool DriveStraight(double x, double y, double errOk, bool xMatters)
 	{
 		u   = nc.GoToGoal(x, y);
 		//vv  = ucm.Tracker(u.GetX(), u.GetY());
@@ -958,8 +1049,16 @@ public:
 		autoVecErr.SetX(x-drivePos.GetX());
 		autoVecErr.SetY(y-drivePos.GetY());
 
+		double matters;
+		if (xMatters)
+		{
+			matters = autoVecErr.GetX();
+		}else
+		{
+			matters = autoVecErr.GetY();
+		}
 
-		if(autoVecErr.GetMag()>=errOk)//if(e.GetX()>=errOk)
+		if(fabs(matters)>=errOk)//if(e.GetX()>=errOk)
 		{
 			//drive.Set(dmc);
 			return false;
@@ -997,6 +1096,33 @@ public:
 		}
 		return false;
 	}
+
+	bool ApproachWall(double goal, double maxSpeed)
+	{
+		double e = frontSonar.GetDistance()-goal;
+
+		if(fabs(e)>1.0)
+		{
+			//if(e>0)
+			{
+				vv.v = maxSpeed*(1-exp(-.1*e*e));
+			//}else
+			//{
+				//vv.v = -maxSpeed*(1-exp(-.1*e*e));
+			}
+			vv.w = 0.0;
+			dmc = ucm.DifferentialOutput(vv);
+			return false;
+		}else
+		{
+			vv.v = 0.0;
+			vv.w = 0.0;
+			dmc = ucm.DifferentialOutput(vv);
+			return true;
+		}
+
+	}
+
 	void DebugStick()
 	{
 		if(stick2.GetYButtonPressed())
@@ -1146,7 +1272,10 @@ public:
 	Vector2D goal;
 	Vector2D u;
 
+
+
 	BNO055 imu{I2C::Port::kMXP};
+	AnalogSonar frontSonar{0};
 
 	NavController nc{&drivePos};
 	UnicycleController ucm{&drivePos};
