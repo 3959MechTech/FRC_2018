@@ -12,10 +12,24 @@
 
 Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(slaveMotor)
 {
+	//A parameter value of "1" will enable the feature while a parameter of "0" will disable the feature.
 	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,0,0,0,kTimeOut);
 
 	eTalon.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0, kTimeOut);
-
+/*
+	eTalon.ConfigForwardLimitSwitchSource(
+			RemoteLimitSwitchSource::RemoteLimitSwitchSource_RemoteTalonSRX,
+			LimitSwitchNormal::LimitSwitchNormal_NormallyOpen,
+			eSTalon.GetDeviceID(),
+			10
+		);
+	eTalon.ConfigReverseLimitSwitchSource(
+			RemoteLimitSwitchSource::RemoteLimitSwitchSource_RemoteTalonSRX,
+			LimitSwitchNormal::LimitSwitchNormal_NormallyClosed,
+			eSTalon.GetDeviceID(),
+			10
+		);
+*/
 	eSTalon.Follow(eTalon);
 
 	//Elevator Inversion
@@ -31,7 +45,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 	posVals[Bottom][1] = .2;
 	posVals[Bottom][2] = 1.0;
 
-	posVals[Travel][0] = 3555;
+	posVals[Travel][0] = 8000;
 	posVals[Travel][1] = .2;
 	posVals[Travel][2] = 1.0;
 
@@ -41,7 +55,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	posVals[Switch][0] = 45000;
 	posVals[Switch][1] = .3;
-	posVals[Switch][2] = .8;
+	posVals[Switch][2] = 1.0;
 
 	posVals[ScaleLow][0] = 120000;
 	posVals[ScaleLow][1] = .5;
@@ -53,7 +67,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	posVals[ScaleHigh][0] = 156000;
 	posVals[ScaleHigh][1] = .75;
-	posVals[ScaleHigh][2] = .45;
+	posVals[ScaleHigh][2] = .4;
 
 	posVals[Top][0] = 156000;
 	posVals[Top][1] = 1.0;
@@ -68,15 +82,15 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	//Up moves
 	eTalon.Config_kF(0,0,kTimeOut);
-	eTalon.Config_kP(0,.15,kTimeOut);
+	eTalon.Config_kP(0,.6,kTimeOut);//original @.15
 	eTalon.Config_kI(0,0,kTimeOut);
-	eTalon.Config_kD(0,0.1,kTimeOut);
+	eTalon.Config_kD(0,0.2,kTimeOut);//original @ .2
 
 	//Down Moves
 	eTalon.Config_kF(1,0,kTimeOut);
-	eTalon.Config_kP(1,.05,kTimeOut);
+	eTalon.Config_kP(1,.6,kTimeOut);//original @.05
 	eTalon.Config_kI(1,0,kTimeOut);
-	eTalon.Config_kD(1,0.5,kTimeOut);
+	eTalon.Config_kD(1,0.8,kTimeOut);
 
 }
 
@@ -90,6 +104,8 @@ void Elevator::SendData(std::string name)
 	SmartDashboard::PutNumber(name+" raw position", eTalon.GetSensorCollection().GetQuadraturePosition());
 	SmartDashboard::PutBoolean(name+" Top Limit Switch", eTalon.GetSensorCollection().IsFwdLimitSwitchClosed());
 	SmartDashboard::PutBoolean(name+" Bottom Limit Switch", eTalon.GetSensorCollection().IsRevLimitSwitchClosed());
+	SmartDashboard::PutBoolean(name+" Slave Top Limit Switch", eSTalon.GetSensorCollection().IsFwdLimitSwitchClosed());
+	SmartDashboard::PutBoolean(name+" Slave Bottom Limit Switch", eSTalon.GetSensorCollection().IsRevLimitSwitchClosed());
 
 	SmartDashboard::PutNumber(name+" Closed Loop Error", eTalon.GetClosedLoopError(0));
 	SmartDashboard::PutNumber(name+" Closed Loop Target", eTalon.GetClosedLoopTarget(0));
@@ -110,6 +126,11 @@ double Elevator::GetHeight(EPos pos)
 double Elevator::GetRamp(EPos pos)
 {
 	return posVals[pos][1];
+}
+
+double Elevator::GetMaxSpeed(EPos pos)
+{
+	return posVals[pos][2];
 }
 
 void Elevator::SetMaxRamp(double ramp)
@@ -177,6 +198,10 @@ void Elevator::SetMotorSpeed(double speed)
 }
 void Elevator::SetPosition(double pos)
 {
+	if(pos>posVals[EPos::Top][0])
+	{
+		pos = posVals[EPos::Top][0];
+	}
 	//eTalon.GetClosedLoopTarget(0);
 	eTalon.Set(ControlMode::Position, pos);
 }

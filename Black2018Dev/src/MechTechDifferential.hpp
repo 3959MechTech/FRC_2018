@@ -78,6 +78,8 @@ public:
 
 	void SetLeftFPID(double F, double P, double I, double D);
 	void SetRightFPID(double F, double P, double I, double D);
+	void SetLeftFPID(double F, double P, double I, double D, int slot = 0);
+	void SetRightFPID(double F, double P, double I, double D, int slot = 0);
 
 	void SendData(std::string name ="Drive");
 
