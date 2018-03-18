@@ -54,6 +54,7 @@ public:
 
 	double GetHeight(EPos);
 	double GetRamp(EPos);
+	double GetMaxSpeed(EPos);
 
 	bool GetBottomLimitSwitch(){return eTalon.GetSensorCollection().IsRevLimitSwitchClosed();};
 	bool GetBottomSlaveLimitSwitch(){return !eSTalon.GetSensorCollection().IsRevLimitSwitchClosed();};
