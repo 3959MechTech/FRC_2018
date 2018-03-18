@@ -20,7 +20,6 @@ private:
 	DigitalInput sensor;
 
 	Timer 	fireTimer;
-	bool 	firing;
 	double 	fireTime;
 
 public:

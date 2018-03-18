@@ -13,7 +13,6 @@ Claw::Claw(int leftMotor, int rightMotor, int sensorport): lm(leftMotor), rm(rig
 	//rm.Follow(lm);
 	rm.SetInverted(true);
 
-	firing = false;
 	fireTime = 0.5;
 }
 
@@ -43,7 +42,6 @@ bool Claw::Feed(double speed)
 
 void Claw::ResetFire()
 {
-	firing  = false;
 	fireTimer.Stop();
 }
 
@@ -51,7 +49,6 @@ void Claw::Fire(double speed, double dur)
 {
 	fireTime = dur;
 	fireTimer.Start();
-	firing = true;
 	Shoot(speed);
 
 }
@@ -61,11 +58,10 @@ bool Claw::isFiring()
 	if(fireTimer.Get()>=fireTime)
 	{
 		Shoot(0.0);
-		firing = false;
 		fireTimer.Stop();
-		return true;
+		return false;
 	}
-	return false;
+	return true;
 }
 
 void Claw::SendData(std::string name)
