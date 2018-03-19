@@ -522,6 +522,9 @@ public:
 		//drive.SendData();
 
 		SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
+		SmartDashboard::PutNumber("IMU Euler X", eulers.x);
+		SmartDashboard::PutNumber("IMU Euler Y", eulers.y);
+		SmartDashboard::PutNumber("IMU Euler Z", eulers.z);
 
 		SmartDashboard::PutNumber("autoSelected", autoSelected);
 
@@ -551,7 +554,7 @@ public:
 
 	void UpdateDrivePos()
 	{
-		Vector eulers = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER);
+		eulers = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER);
 		double phi = -CleanAngle(3.14159*eulers.x/180.0);
 		phi = CleanAngle(phi-headingOffset);
 		double l,r,d;
@@ -593,7 +596,7 @@ public:
 		oldRDrivePos = 0.0;
 		drivePos.SetX(initPositions[spotSelected][0]);
 		drivePos.SetY(initPositions[spotSelected][1]);
-		headingOffset = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER).x;
+		headingOffset = eulers.x;
 		headingOffset = -CleanAngle(3.14159*headingOffset/180.0);
 		drivePos.SetPhi(0.0);
 	}
@@ -1155,6 +1158,14 @@ public:
 
 	}
 
+	void RollSafety()
+	{
+		if(fabs(eulers.z)>8.0)//roll angle of +/-8 deg lower tower.
+		{
+			//ele.SetEPos(Elevator::Bottom);
+		}
+	}
+
 	void DebugStick()
 	{
 		if(stick2.GetYButtonPressed())
@@ -1307,6 +1318,8 @@ public:
 
 
 	BNO055 imu{I2C::Port::kMXP};
+	Vector eulers;
+
 	AnalogSonar frontSonar{0};
 
 	NavController nc{&drivePos};
