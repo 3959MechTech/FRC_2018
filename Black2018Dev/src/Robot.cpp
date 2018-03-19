@@ -239,8 +239,22 @@ public:
 		{
 			if(lt>.1)
 			{
-				claw.Shoot(lt);
-				s = lt;
+				//throttle shooter if at scale levels
+				//and shooting +/- 36deg up or down range
+				if(ele.GetEPos()>=Elevator::ScaleLow &&
+						(
+							fabs(drivePos.GetPhi())<(3.14159/5.0) ||
+							fabs(drivePos.GetPhi())<(3.14159-3.14159/5.0)
+						)
+				)
+				{
+					s = lt*.7;
+					claw.Shoot(s);
+				}else
+				{
+					claw.Shoot(lt);
+					s = lt;
+				}
 			}else
 			{
 				if(rt>.1)
@@ -338,7 +352,7 @@ public:
 
 	void TeleopInit()
 	{
-		ResetPose();
+		//ResetPose();
 		SendData();
 	}
 
@@ -457,12 +471,11 @@ public:
 
 		GetFMSData();
 		UpdateDrivePos();
-		AutoStraight();
 		SendData();
 	}
 	void DisabledInit()
 	{
-		ResetPose();
+		//ResetPose();
 		GetFMSData();
 		SendData();
 	}
