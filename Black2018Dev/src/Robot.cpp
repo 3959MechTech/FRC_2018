@@ -211,6 +211,7 @@ public:
 							break;
 			case FarSwitch:	AutoFarSideSwitch();
 							break;
+			default:			break;
 			}
 
 
@@ -344,10 +345,10 @@ public:
 	void TestPeriodic() {
 		UpdateDrivePos();
 
-
+/*
 		double rt= stick2.GetTriggerAxis(frc::GenericHID::kRightHand);
 		double lt= stick2.GetTriggerAxis(frc::GenericHID::kLeftHand);
-/*
+
 		double s = 0.0;
 		if(!stick3.GetBButton())
 		{
@@ -770,49 +771,80 @@ public:
 	void AutoNearSideScale()
 	{
 
-		AutoStraight();
-/*		bool done = false;
+		//AutoStraight();
+		bool done = false;
 
-				double ySign = 1.0;//used to flip the Y value
-				if(!ourSwitch)
-				{
-					ySign = -1.0;
-				}
-				ucm.Set_maxOmega(2000);
+		double ySign = 1.0;//used to flip the Y value
+		if(!ourSwitch)
+		{
+			ySign = -1.0;
+		}
+		ucm.Set_maxOmega(2000);
 
-				switch(autoStep)
-				{
-				case 0: turning = false;
-						ele.SetEPos(Elevator::Bottom);
-						autoStep++;
-						break;
-				case 1: turning = false;
-						angleToTurn = 0.0;
-						nc.SetAngle(angleToTurn);
-						nc.SetAlpha(.005);
-						ele.SetEPos(Elevator::Travel);
-						nc.SetV0(600);
-						done = DriveStraight(180.0,initPositions[spotSelected][1],4.0, true);
-						break;
-/*				case 2: angleToTurn = -ySign*3.14159/2.0;
-						nc.SetAngle(angleToTurn);
-						ele.SetEPos(Elevator::Switch);
-						done = true;
-						break;
-				case 3: turning = true;
-						nc.SetOmega(1200);
-						done = Turn();
-						break;
+		switch(autoStep)
+		{
+				//deploy cube/shooter
+		case 0: turning = false;
+				ele.SetEPos(Elevator::Bottom);
+				autoStep++;
+				break;
 
-				default: dmc.VL = 0.0; dmc.VR=0.0;
-				}
+				//drive straight 200"
+		case 1: turning = false;
+				angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				nc.SetAlpha(.005);
+				ele.SetEPos(Elevator::Travel);
+				nc.SetV0(700);
+				done = DriveStraight(200.0,initPositions[spotSelected][1],4.0, true);
+				break;
 
-				if(done)
-				{
-					done = false;
-					autoStep++;
-				}
-				*/
+				//setup 90deg turn
+		case 2: angleToTurn = -ySign*3.14159/2.0;//-90 deg in rad for left side, 90 deg on right
+				nc.SetAngle(angleToTurn);
+				ele.SetEPos(Elevator::Switch);
+				done = true;
+				break;
+
+				//turn
+		case 3: turning = true;
+				nc.SetOmega(1200);
+				done = Turn();
+				break;
+
+/*				//align with wall
+		case 4:
+				break;
+
+				//raise to high elevator
+		case 5:	ele.SetEPos(Elevator::ScaleHigh);
+				if(ele.GetError()<4000){done = true;} //wait till we are close.
+				break;
+
+				//shoot!
+		case 6:	claw.claw.Fire(.8,.5);
+				done = true;
+				break;
+
+				//are we done shooting
+		case 7: done = !claw.isFiring();
+				break;
+
+				//drop ele
+		case 8:	ele.SetEPos(Elevator::Bottom);
+				if(ele.GetError()<4000){done = true;} //wait till we are close.
+				break;
+
+//*/		default: dmc.VL = 0.0; dmc.VR=0.0;
+
+		}
+
+		if(done)
+		{
+			done = false;
+			autoStep++;
+		}
+
 	}
 
 	void AutoFarSideScale()
