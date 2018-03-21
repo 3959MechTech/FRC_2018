@@ -641,7 +641,7 @@ public:
 
 		//split Arcade
 		vv.v = lY*1500.0;
-		vv.w = rX*2500.0;
+		vv.w = rX*2000.0;
 
 
 		//1 stick Arcade
