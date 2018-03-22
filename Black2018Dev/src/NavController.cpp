@@ -10,7 +10,7 @@
 #include <cmath>
 
 NavController::NavController(Pose2D* pose):
-	headingPID(2200.0,0.0,10000.0,pose,&catcher,.005),
+	headingPID(2000.0,0.0,10000.0,pose,&catcher,.005),
 	catcher()
 {
 	v0 = 12.0;
