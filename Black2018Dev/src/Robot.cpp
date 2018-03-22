@@ -248,7 +248,7 @@ public:
 						)
 				)
 				{
-					s = lt*.7;
+					s = lt*.7;//decrease power by 70%
 					claw.Shoot(s);
 				}else
 				{
@@ -567,26 +567,37 @@ public:
 
 	void UpdateDrivePos()
 	{
+
+		//grab euler angles from imu and store in member vector.
 		eulers = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER);
+
+		//convert yaw angle to radians
 		double phi = -CleanAngle(3.14159*eulers.x/180.0);
-		phi = CleanAngle(phi-headingOffset);
+		phi = CleanAngle(phi-headingOffset); //apply offset
+
 		double l,r,d;
+		//update x and y position as long as we aren't doing a 0 point turn
 		if(!turning)
 		{
+			//get the distance traveled by each wheel
 			l = 3.14159*4.0*(drive.GetLeftEncoderPosition()/1440.0);
 			r = 3.14159*4.0*(drive.GetRightEncoderPosition()/1440.0);
+
+			//remove old position, so we are only adding the change in distance
+			//find the distance the CENTER of the robot moved
 			d = ((l-oldLDrivePos)+(r-oldRDrivePos))/2.0;
 
-			if(useSimData)
+			if(useSimData) //used to simulate robot moving
 			{
 				drivePos.SetX(simx);
 				drivePos.SetY(simy);
 			}else
 			{
+				//update position based on heading and distance moved.
 				drivePos.SetX( drivePos.GetX() + d*cos(phi));
 				drivePos.SetY(drivePos.GetY() + d*sin(phi));
 			}
-
+			//store current l and r into old values to be removed next time
 			oldLDrivePos = l;
 			oldRDrivePos = r;
 		}else
@@ -640,8 +651,8 @@ public:
 		}
 
 		//split Arcade
-		vv.v = lY*1500.0;
-		vv.w = rX*1750.0;
+		vv.v = lY*1500.0;//stick value multiplied by max translational speed
+		vv.w = rX*1750.0;//stick value multiplied by max rotational speed
 
 
 		//1 stick Arcade
@@ -960,58 +971,75 @@ public:
 		bool done = false;
 
 		double ySign = 1.0;//used to flip the Y value
+		//If switch is on the right side, all Y points and angles are inverted
 		if(!ourSwitch)
 		{
 			ySign = -1.0;
 		}
+
+		//set max turning speed for Nav Controller
 		ucm.Set_maxOmega(2000);
 
+		//Auto routine State Machine
 		switch(autoStep)
 		{
-		case 0: turning = false;
-				ele.SetEPos(Elevator::Bottom);
-				autoStep++;
+				//Set elevator to bottom position to deploy cube
+		case 0: turning = false;//make sure that we are updating robot x&y position
+				ele.SetEPos(Elevator::Bottom);//set elevator to bottom value (above mechanical limit)
+				autoStep++;//go to next step on the next pass
 				break;
+
+				//drive straight enough to turn
 		case 1: turning = false;
-				angleToTurn = 0.0;
-				nc.SetAngle(angleToTurn);
-				nc.SetAlpha(.005);
-				ele.SetEPos(Elevator::Travel);
+				angleToTurn = 0.0;//we need to drive straight at this heading
+				nc.SetAngle(angleToTurn);//set the angle in the PID
+				nc.SetAlpha(.005);//set how soon we start dropping speed to stop
+				ele.SetEPos(Elevator::Travel);//raise up to travel height
 				//nc.SetV0(1200);
-				done = DriveStraight(24.0,initPositions[Middle][1],4.0, true);
+				done = DriveStraight(24.0,initPositions[Middle][1],4.0, true);//drive straight 24"
 				break;
+
+				//do math for turning to the next way point
+				//next way point is 70,70, or 70,-70
 		case 2: angleToTurn = atan2(ySign*70.0-drivePos.GetY(),70.0-drivePos.GetX());
-				nc.SetAngle(angleToTurn);
-				done = true;
+				nc.SetAngle(angleToTurn);//set angle in turn controller
+				done = true;//progress to next step
 				break;
-		case 3: turning = true;
-				nc.SetOmega(800);
-				done = Turn();
+		case 3: turning = true;//start turn
+				nc.SetOmega(800);//set max turn speed
+				done = Turn();//turn
 				break;
-		case 4: nc.SetAlpha(.001);
-				nc.SetV0(1200);
-				turning = false;
-				ele.SetEPos(Elevator::Switch);
-				nc.SetOmega(1200);
-				done = DriveStraight(70.0,ySign*70.0,4.0, false);
+				//drive to waypoint
+		case 4: nc.SetAlpha(.001);//need longer ramp down of speed to kill momentum
+				nc.SetV0(1200);//set max speed
+				turning = false;//turn off turning flag to update x,y again
+				ele.SetEPos(Elevator::Switch);//raise block for deployment
+				nc.SetOmega(1200);//set max turn speed
+				done = DriveStraight(70.0,ySign*70.0,4.0, false);//drive
 				break;
-		case 5: angleToTurn = 0.0;
-				nc.SetAngle(angleToTurn);
-				turning = true;
-				done = true;
+
+				//setup turn to switch
+		case 5: angleToTurn = 0.0;//set angle to face switch
+				nc.SetAngle(angleToTurn);//set angle
+				turning = true;//set turn flag
+				done = true;//go to next step
 				break;
-		case 6:	nc.SetOmega(2000);
-				done = Turn();
-				if(!(fabs(drivePos.GetPhi())<.02))
+
+				//turn to switch
+		case 6:	nc.SetOmega(2000);//set max speed
+				done = Turn();//turn
+				if(!(fabs(drivePos.GetPhi())<.02))//check error, error was passing through check
 				{
 					done = false;
 				}
 				break;
-		case 7: turning = false;
-				nc.SetAlpha(.005);
+
+				//Approach switch wall
+		case 7: turning = false;//turn off turn flag
+				nc.SetAlpha(.005);//set sensitivity of curve
 				//nc.SetV0(1200);
-				ucm.Set_maxOmega(1000);
-				done = ApproachWall(13.0,600);
+				ucm.Set_maxOmega(1000);//set max drive speed
+				done = ApproachWall(13.0,600);//approach wall within 13"
 				if(frontSonar.GetDistance()<14.0)
 				{
 					done = true;
@@ -1019,42 +1047,58 @@ public:
 				{
 					done = false;
 				}
+				vv.w=0;//no turning allowed
+				break;
 
-						//DriveStraight(85.0,drivePos.GetY(),4.0, true);
-				vv.w=0;
-				break;
+				//FIRE!!!!
 		case 8: turning = false;
-				autoStep++;
-				autoTimer.Start();
+				autoStep++;//go to next step
+				autoTimer.Start();//Start timer
 				break;
+				//FIRE!!!
 		case 9:	turning = false;
-				claw.Shoot(.5);
-				if(autoTimer.Get()>0.75)
+				claw.Shoot(.5);//set shooter speed
+				if(autoTimer.Get()>0.75)//shoot for at least .75sec
 				{
-					autoTimer.Stop();
-					autoStep++;
+					autoTimer.Stop();//stop timer
+					autoStep++;//next step
 				}
 				break;
+				//HOLD FIRE!
 		case 10: turning = false;
-				claw.Shoot(0.0);
-				autoStep++;
+				claw.Shoot(0.0);//stop shooting
+				autoStep++;//Next step
 				break;
-/*		case 11: nc.SetAlpha(.001);
+
+				//reset drive position,
+				//assuming we lost position by hitting wall
+		case 11: drivePos.SetX(90.0);//update with sonar
+				drivePos.SetY(ySign*70.0);//pray this is right
+				break;
+
+				//backup to
+		case 12: nc.SetAlpha(.001);
 				nc.SetV0(800);
 				turning = false;
 				nc.SetOmega(1200);
-				done = DriveStraight(40.0,drivePos.GetY(),4.0, true);
+				done = DriveStraight(30.0,drivePos.GetY(),4.0, true);
 				break;
-		case 12: angleToTurn = atan2(ySign*20.0-drivePos.GetY(),60.0-drivePos.GetX());
+
+				//setup turn to cubes
+		case 12: angleToTurn = atan2(ySign*10.0-drivePos.GetY(),60.0-drivePos.GetX());
 				nc.SetAngle(angleToTurn);
 				ele.SetEPos(Elevator::Bottom);
 				done = true;
 				break;
+
+				//turn to cubes
 		case 13: turning = true;
 				nc.SetOmega(800);
 				done = Turn();
 				break;
-		case 14: nc.SetAlpha(.001);
+
+				//approach cubes
+/*		case 14: nc.SetAlpha(.001);
 				nc.SetV0(800);
 				turning = false;
 				nc.SetOmega(1200);
@@ -1073,8 +1117,8 @@ public:
 
 	void AutoStraight()
 	{
-		nc.SetAlpha(.001);
-		nc.SetV0(1000);
+		nc.SetAlpha(.001);//max sensitivity
+		nc.SetV0(1000);//max speed of 1000, Coach said 1200 looked crazy
 		ele.SetEPos(Elevator::Travel);
 		DriveStraight(120.0,0.0,4.0, true);
 		if((120.0 - drivePos.GetX())<2.0)
@@ -1130,6 +1174,7 @@ public:
 		}
 		return false;
 	}
+
 
 	bool Turn(double angle)
 	{
