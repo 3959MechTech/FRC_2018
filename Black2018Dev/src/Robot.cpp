@@ -81,6 +81,10 @@ public:
 		autoStep = 0;
 		angleToTurn = 0.0;
 
+		rearSonar.setVoltsPerInch(.009765625);
+		rightSonar.setVoltsPerInch(.009765625);
+		leftSonar.setVoltsPerInch(.009765625);
+
 		drive.ConfigRobot(4.0,24.0,1440.0);
 
 		drive.SetLeftFPID( .72,0.0,0.0,0,0);
@@ -201,9 +205,9 @@ public:
 			{
 			case Straight: 	AutoStraight();
 							break;
-			case MidSwitch: 	AutoMidSwitch();
+			case MidSwitch: AutoMidSwitch();
 							break;
-			case Switch:		AutoNearSideSwitch();
+			case Switch:	AutoNearSideSwitch();
 							break;
 			case Scale:		AutoNearSideScale();
 							break;
@@ -255,6 +259,7 @@ public:
 					claw.Shoot(lt);
 					s = lt;
 				}
+
 			}else
 			{
 				if(rt>.1)
@@ -266,6 +271,11 @@ public:
 					claw.Shoot(0.0);
 					s = 0.0;
 				}
+			}
+			if(stick2.GetBumper(frc::GenericHID::kLeftHand))
+			{
+				claw.Shoot(1.0);
+				s=1.0;
 			}
 		}
 
@@ -534,9 +544,9 @@ public:
 		rd = prefs->GetDouble("Drive Right D",rd);
 */
 		drivePos.SendData("Drive Pose");
-		//ele.SendData();
+		ele.SendData();
 		//claw.SendData();
-		//drive.SendData();
+		drive.SendData();
 
 		SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
 		SmartDashboard::PutNumber("IMU Euler X", eulers.x);
@@ -811,6 +821,9 @@ public:
 			ySign = -1.0;
 		}
 		ucm.Set_maxOmega(2000);
+		nc.SetP(1800.0);
+		nc.SetI(0.0);
+		nc.SetD(8000.0);
 
 		switch(autoStep)
 		{
@@ -825,15 +838,14 @@ public:
 				angleToTurn = 0.0;
 				nc.SetAngle(angleToTurn);
 				nc.SetAlpha(.005);
-				ele.SetEPos(Elevator::Travel);
+				ele.SetEPos(Elevator::Switch);
 				nc.SetV0(700);
-				done = DriveStraight(180.0,initPositions[spotSelected][1],4.0, true);
+				done = DriveStraighter(180.0,initPositions[spotSelected][1],4.0, true);
 				break;
 
 				//setup 90deg turn
-		case 2: angleToTurn = -ySign*3.14159/2.0;//-90 deg in rad for left side, 90 deg on right
+/*		case 2: angleToTurn = ySign*3.14159/2.0;//-90 deg in rad for left side, 90 deg on right
 				nc.SetAngle(angleToTurn);
-				ele.SetEPos(Elevator::Switch);
 				done = true;
 				break;
 
@@ -845,10 +857,11 @@ public:
 
 				//align with wall
 		case 4:	done = ApproachRearWall(16.0,500.0);
+				//raise to lower scale here
 				break;
 
 				//raise to high elevator
-/*		case 5:	ele.SetEPos(Elevator::ScaleHigh);
+		case 5:	ele.SetEPos(Elevator::ScaleHigh);
 				if(ele.GetError()<4000){done = true;} //wait till we are close.
 				break;
 
@@ -891,6 +904,10 @@ public:
 		}
 		ucm.Set_maxOmega(2000);
 
+		nc.SetP(1800.0);
+		nc.SetI(0.0);
+		nc.SetD(8000.0);
+
 		switch(autoStep)
 		{
 		case 0: turning = false;
@@ -903,9 +920,9 @@ public:
 				nc.SetAlpha(.005);
 				ele.SetEPos(Elevator::Travel);
 				nc.SetV0(1000);
-				done = DriveCurved(150.0,initPositions[spotSelected][1],4.0, true);
+				done = DriveStraighter(150.0,initPositions[spotSelected][1],4.0, true);
 				break;
-		case 2: angleToTurn = -ySign*3.14159/2.0;
+/*		case 2: angleToTurn = ySign*3.14159/2.0;
 				nc.SetAngle(angleToTurn);
 				ele.SetEPos(Elevator::Switch);
 				done = true;
@@ -914,7 +931,7 @@ public:
 				nc.SetOmega(1200);
 				done = Turn();
 				break;
-/*		case 4: nc.SetAlpha(.001);
+		case 4: nc.SetAlpha(.001);
 				nc.SetV0(800);
 				turning = false;
 				nc.SetOmega(1200);
@@ -979,6 +996,10 @@ public:
 		}
 		ucm.Set_maxOmega(2000);
 
+		nc.SetP(1800.0);
+		nc.SetI(0.0);
+		nc.SetD(8000.0);
+
 		switch(autoStep)
 		{
 		case 0: turning = false;
@@ -989,11 +1010,11 @@ public:
 				angleToTurn = 0.0;
 				nc.SetAngle(angleToTurn);
 				nc.SetAlpha(.005);
-				ele.SetEPos(Elevator::Travel);
+				ele.SetEPos(Elevator::Switch);
 				nc.SetV0(1000);
-				done = DriveCurved(120.0,initPositions[spotSelected][1],4.0, true);
+				done = DriveStraighter(120.0,initPositions[spotSelected][1],4.0, true);
 				break;
-		case 2: angleToTurn = -ySign*3.14159/2.0;
+/*		case 2: angleToTurn = ySign*3.14159/2.0;
 				nc.SetAngle(angleToTurn);
 				ele.SetEPos(Elevator::Switch);
 				done = true;
@@ -1079,7 +1100,7 @@ public:
 				nc.SetAngle(angleToTurn);//set the angle in the PID
 				nc.SetAlpha(.005);//set how soon we start dropping speed to stop
 				ele.SetEPos(Elevator::Travel);//raise up to travel height
-				//nc.SetV0(1200);
+				nc.SetV0(1000);
 				done = DriveStraight(24.0,initPositions[Middle][1],4.0, true);//drive straight 24"
 				break;
 
@@ -1095,11 +1116,11 @@ public:
 				break;
 				//drive to waypoint
 		case 4: nc.SetAlpha(.001);//need longer ramp down of speed to kill momentum
-				nc.SetV0(1200);//set max speed
+				nc.SetV0(1000);//set max speed
 				turning = false;//turn off turning flag to update x,y again
 				ele.SetEPos(Elevator::Switch);//raise block for deployment
 				nc.SetOmega(1200);//set max turn speed
-				done = DriveStraight(70.0,ySign*70.0,4.0, false);//drive
+				done = DriveStraight(70.0,ySign*70.0,6.0, false);//drive
 				break;
 
 				//setup turn to switch
@@ -1123,7 +1144,7 @@ public:
 				nc.SetAlpha(.005);//set sensitivity of curve
 				//nc.SetV0(1200);
 				ucm.Set_maxOmega(1000);//set max drive speed
-				done = ApproachWall(13.0,600);//approach wall within 13"
+				done = ApproachWall(16.0,600);//approach wall within 13"
 				if(frontSonar.GetDistance()<14.0)
 				{
 					done = true;
@@ -1137,6 +1158,7 @@ public:
 				//FIRE!!!!
 		case 8: turning = false;
 				autoStep++;//go to next step
+				autoTimer.Reset();
 				autoTimer.Start();//Start timer
 				break;
 				//FIRE!!!
@@ -1169,20 +1191,20 @@ public:
 				break;
 
 				//setup turn to cubes
-		case 12: angleToTurn = atan2(ySign*10.0-drivePos.GetY(),60.0-drivePos.GetX());
+		case 13: angleToTurn = atan2((ySign*10.0-drivePos.GetY()),(60.0-drivePos.GetX()));
 				nc.SetAngle(angleToTurn);
 				ele.SetEPos(Elevator::Bottom);
 				done = true;
 				break;
 
 				//turn to cubes
-		case 13: turning = true;
+		case 14: turning = true;
 				nc.SetOmega(800);
 				done = Turn();
 				break;
 
 				//approach cubes
-/*		case 14: nc.SetAlpha(.001);
+/*		case 15: nc.SetAlpha(.001);
 				nc.SetV0(800);
 				turning = false;
 				nc.SetOmega(1200);
@@ -1256,6 +1278,38 @@ public:
 		//vv  = ucm.Tracker(u.GetX(), u.GetY());
 		vv.v = u.GetX();
 		vv.w = u.GetY();
+		dmc = ucm.DifferentialOutput(vv);
+		//dmc = ucm.GetDifferentialMotorCommand(u.GetX(), u.GetY());
+
+		autoVecErr.SetX(x-drivePos.GetX());
+		autoVecErr.SetY(y-drivePos.GetY());
+
+		double matters;
+		if (xMatters)
+		{
+			matters = autoVecErr.GetX();
+		}else
+		{
+			matters = autoVecErr.GetY();
+		}
+
+		if(fabs(matters)>=errOk)//if(e.GetX()>=errOk)
+		{
+			//drive.Set(dmc);
+			return false;
+		}else
+		{
+			dmc.VL = 0.0;
+			dmc.VR = 0.0;
+			return true;
+		}
+	}
+	bool DriveStraighter(double x, double y, double errOk, bool xMatters)
+	{
+		u   = nc.GoToGoal(x, y);
+		//vv  = ucm.Tracker(u.GetX(), u.GetY());
+		vv.v = u.GetX();
+		vv.w = 0.0;
 		dmc = ucm.DifferentialOutput(vv);
 		//dmc = ucm.GetDifferentialMotorCommand(u.GetX(), u.GetY());
 
@@ -1528,8 +1582,8 @@ public:
 
 	AnalogSonar frontSonar{0};
 	AnalogSonar rearSonar{1};
-	AnalogSonar leftSonar{3};
-	AnalogSonar rightSonar{2};
+	AnalogSonar leftSonar{2};
+	AnalogSonar rightSonar{3};
 
 	NavController nc{&drivePos};
 	UnicycleController ucm{&drivePos};
