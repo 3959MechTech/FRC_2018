@@ -85,6 +85,10 @@ Vector2D 	NavController::GoToGoal(double x, double y)
 		dir = -1.0;
 	}
 	w = Turn();
+	if(ex<12.0)
+	{
+		w=0.0;
+	}
 	//return Vector2D(k*ex,k*ey);
 	//return Vector2D(dir*v0*(1.0-exp(-alpha*e*e)),1.0*w);
 	return Vector2D(dir*k,w);
@@ -110,7 +114,9 @@ double 	NavController::Turn(double phi)
 double 	NavController::Turn()
 {
 	double out = catcher.GetOutput();
-	SmartDashboard::PutNumber("out", out);
+	out = atan2(sin(headingPID.GetError()),cos(headingPID.GetError()));//get error angle
+	out = maxOmega*out;
+	SmartDashboard::PutNumber("Turn PID output", out);
 	SmartDashboard::PutNumber("fabs err", fabs(headingPID.GetError()));
 	if(fabs(headingPID.GetError())>.02 && fabs(out)<550.0)
 	{
@@ -118,10 +124,10 @@ double 	NavController::Turn()
 
 		if(out<0)
 		{
-			out = -550.0;
+			out = -650.0;
 		}else
 		{
-			out = 550.0;
+			out = 650.0;
 		}
 
 	}else

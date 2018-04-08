@@ -14,22 +14,23 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 {
 	//A parameter value of "1" will enable the feature while a parameter of "0" will disable the feature.
 	eTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,0,0,0,kTimeOut);
+	eSTalon.ConfigSetParameter(ctre::phoenix::ParamEnum::eClearPositionOnLimitR,0,0,0,kTimeOut);
 
 	eTalon.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 0, kTimeOut);
 /*
 	eTalon.ConfigForwardLimitSwitchSource(
-			RemoteLimitSwitchSource::RemoteLimitSwitchSource_RemoteTalonSRX,
-			LimitSwitchNormal::LimitSwitchNormal_NormallyOpen,
-			eSTalon.GetDeviceID(),
+			LimitSwitchSource::LimitSwitchSource_FeedbackConnector,
+			LimitSwitchNormal::LimitSwitchNormal_NormallyClosed,
+			//eSTalon.GetDeviceID(),
 			10
 		);
 	eTalon.ConfigReverseLimitSwitchSource(
-			RemoteLimitSwitchSource::RemoteLimitSwitchSource_RemoteTalonSRX,
+			LimitSwitchSource::LimitSwitchSource_FeedbackConnector,
 			LimitSwitchNormal::LimitSwitchNormal_NormallyClosed,
-			eSTalon.GetDeviceID(),
+			//eSTalon.GetDeviceID(),
 			10
 		);
-*/
+//*/
 	eSTalon.Follow(eTalon);
 
 	//Elevator Inversion
@@ -88,7 +89,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	//Down Moves
 	eTalon.Config_kF(1,0,kTimeOut);
-	eTalon.Config_kP(1,.6,kTimeOut);//original @.05
+	eTalon.Config_kP(1,.3,kTimeOut);//original @.05
 	eTalon.Config_kI(1,0,kTimeOut);
 	eTalon.Config_kD(1,0.8,kTimeOut);
 
