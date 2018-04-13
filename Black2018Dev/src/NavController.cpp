@@ -78,9 +78,12 @@ Vector2D 	NavController::GoToGoal(double x, double y)
 	double ey = y-robotPose->GetY();
 	double emag = sqrt(ex*ex+ey*ey);
 	double k=v0*(1.0-exp(-alpha*emag*emag));
-	double w = atan2(ey,ex)/3.14159;
+	double w = atan2(ey,ex)-robotPose->GetPhi();
+
+	w = atan2(sin(w),cos(w));
+
 	double dir = 1.0;
-	if(ex<0.0)
+	if(ex<0.0 && (fabs(w)>3.14159/2.0))
 	{
 		dir = -1.0;
 	}
