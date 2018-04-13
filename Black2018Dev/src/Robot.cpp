@@ -1022,7 +1022,7 @@ public:
 				break;
 
 				//shoot!
-		case 5:	claw.Fire(.9,.5);
+		case 5:	claw.Fire(.8,.5);
 				done = true;
 				break;
 
@@ -1059,7 +1059,7 @@ public:
 				nc.SetV0(800.0);
 				ele.SetEPos(Elevator::Bottom);
 				claw.Feed(1.0);
-				done = DriveStraight(220.0,ySign*93.0,8.0, true);//was x=200 tr
+				done = DriveStraight(240.0,ySign*93.0,12.0, true);//was x=200 tr
 				break;
 
 		case 12: autoTimer.Reset();
@@ -1068,7 +1068,7 @@ public:
 				break;
 
 		case 13: if(autoTimer.Get()>.5){done=true;}
-				drivePos.SetX(220.0);
+				drivePos.SetX(240.0);
 				drivePos.SetY(80.0);
 				break;
 
@@ -1077,10 +1077,10 @@ public:
 				 dmc.VL=-600.0;
 				 dmc.VR=-600.0;
 				 ele.SetEPos(Elevator::Switch);
-				 if(drivePos.GetX()>240.0){vv.v=0.0;done = true;}
+				 if(drivePos.GetX()>260.0){vv.v=0.0;done = true;}
 				 break;
 		//setup turn to scale
-		case 15: angleToTurn = 0.0;
+		case 15: angleToTurn = -ySign*3.14159/4.0;
 				   nc.SetAngle(angleToTurn);
 				   done = true;
 				break;
@@ -1095,12 +1095,15 @@ public:
 				nc.SetOmega(1000.0);
 				nc.SetV0(600);
 				ele.SetEPos(Elevator::ScaleHigh);
-				done = DriveStraight(280.0, ySign*77.0,25.0, true);
+				done = DriveStraight(270.0, ySign*77.0,25.0, true);
 				break;
 		//fire!!!
-		case 18:claw.ResetFire();
-				claw.Fire(.6,1.5);
-				done = true;
+		case 18: if(fabs(ele.GetError())<4000.0)
+				 {
+					claw.ResetFire();
+					claw.Fire(.6,1.5);
+					done = true;
+				 }
 				break;
 		//wait for fire to finish
 		case 19:  done = !claw.isFiring();
