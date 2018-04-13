@@ -212,7 +212,7 @@ public:
 							break;
 			case Switch:	AutoNearSideSwitch();
 							break;
-			case Scale:		AutoNearSideScale();
+			case Scale:		AutoNearSideScale2();
 							break;
 			case FarScale:	AutoFarSideScale();
 							break;
@@ -868,12 +868,12 @@ public:
 				break;
 
 				//align with wall
-		case 4:	done = ApproachRearWall(8.0,900.0);
+		case 4:	done = ApproachRearWall(8.0,800.0);
 				//raise to lower scale here
 				ele.SetEPos(Elevator::ScaleLow);
 				break;
-
-		case 5: done = DepartRearWall(26.0,700.0);
+				//Depart wall
+		case 5: done = DepartRearWall(26.0,550.0);
 				ele.SetEPos(Elevator::ScaleHigh);
 				break;
 				//raise to high elevator
@@ -890,28 +890,226 @@ public:
 				//are we done shooting
 		case 8: done = !claw.isFiring();
 				break;
-
-		case 9: done = ApproachRearWall(16.0, 700.0);
+				//Back up to wall
+		case 9: done = ApproachRearWall(20.0, 700.0);
 				break;
 				//drop ele
 		case 10: ele.SetEPos(Elevator::Bottom);
-				if(ele.GetError()<4000){done = true;} //wait till we are close.
+				done=true;
 				break;
 
-		case 11:angleToTurn = atan2(ySign*80.0-drivePos.GetY(),200.0-drivePos.GetX());
+		case 11:if(ele.GetError()<4000){done = true;} //wait till we are close.
+				break;
+				//Turn towards second cube
+		case 12:angleToTurn = atan2(ySign*83.0-drivePos.GetY(),200.0-drivePos.GetX());
 				angleToTurn = CleanAngle(angleToTurn);
 				nc.SetAngle(angleToTurn);
 				done = true;
 				break;
-
-		case 12: turning = true;
+				//Straighten up turn
+		case 13: turning = true;
 				nc.SetOmega(1200);
 				done = Turn();
 				break;
+				//Drive towards second cube
+		case 14: turning = false;
+				nc.SetOmega(1200.0);
+				nc.SetV0(800.0);
+				claw.Feed(1.0);
+				done = DriveStraight(200.0,ySign*83.0,18.0, true);
+				break;
 
-		case 13:
+		case 16: autoTimer.Reset();
+				autoTimer.Start();
+				done=true;
+				break;
+
+		case 17: if(autoTimer.Get()>.25){done=true;}
+				break;
+
+		case 18: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				ele.SetEPos(Elevator::Switch);
+				done = DriveStraight(240.0,ySign*100.0,10.0, false);
+				break;
 //*/
 		default: dmc.VL = 0.0; dmc.VR=0.0;
+				claw.Feed(0);
+
+		}
+
+		if(done)
+		{
+			done = false;
+			autoStep++;
+		}
+
+	}
+
+	void AutoNearSideScale2()
+	{
+
+		//AutoStraight();
+		bool done = false;
+
+		double ySign = 1.0;//used to flip the Y value
+		if(!ourSwitch)
+		{
+			ySign = -1.0;
+		}
+		ucm.Set_maxOmega(2000);
+		nc.SetP(1800.0);
+		nc.SetI(0.0);
+		nc.SetD(8000.0);
+
+		switch(autoStep)
+		{
+				//Enable Claw Intake to straighten up cube
+				//deploy cube/shooter
+		case 0: turning = false;
+				ele.SetEPos(Elevator::Bottom);
+				nc.SetV0(1200);
+				autoStep++;
+				claw.Feed(0.5);
+				nc.SetOmega(1000.0);
+				break;
+
+				//Disables cube intake
+				//drive straight 200"
+		case 1: turning = false;
+				angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				nc.SetAlpha(.005);
+				done = DriveStraight(260.0,initPositions[spotSelected][1],4.0, true);
+				if(drivePos.GetX()>12.0 && ele.GetEPos()==Elevator::Bottom)
+				{
+					claw.Feed(0.0);
+					ele.SetEPos(Elevator::Switch);
+				}
+				if(drivePos.GetX()>120.0 && ele.GetEPos()==Elevator::Switch)
+				{
+					ele.SetEPos(Elevator::ScaleHigh);
+					nc.SetV0(900);
+					nc.SetOmega(900);
+				}
+				if(done && ele.GetError()>4000.0)
+				{
+					done = false;
+				}
+				claw.Feed(0);
+				break;
+
+				//setup 90deg turn
+		case 2: angleToTurn = -ySign*3.14159/4.0;//-90 deg in rad for left side, 90 deg on right
+				nc.SetAngle(angleToTurn);
+				done = true;
+				nc.SetOmega(1500);
+				break;
+
+				//turn
+		case 3: turning = true;
+				nc.SetOmega(1500);//1000
+				done = Turn();
+				break;
+
+		case 4: turning = false;
+				nc.SetAlpha(.005);
+				nc.SetOmega(1000.0);
+				nc.SetV0(800);
+				done = DriveStraight(280.0, ySign*77.0,14.0, true);
+				break;
+
+				//shoot!
+		case 5:	claw.Fire(.9,.5);
+				done = true;
+				break;
+
+				//are we done shooting
+		case 6: done = !claw.isFiring();
+				break;
+
+				//turn back
+				//Turn towards second cube
+		case 7: angleToTurn = atan2(ySign*93.0-drivePos.GetY(),220.0-drivePos.GetX());// was x=200 tr
+		        angleToTurn = CleanAngle(angleToTurn);
+				nc.SetAngle(angleToTurn);
+				nc.SetOmega(600.0);
+				done = true;
+				break;
+				//Straighten up turn
+		case 8: turning = true;
+				if(fabs(drivePos.GetPhi())<(3.14159/2.0))
+				{
+					nc.SetOmega(800.0);
+					ele.SetEPos(Elevator::Bottom);
+				}
+				done = Turn();
+				break;
+		case 9: if(fabs(ele.GetError())<4000.0){done = true;}
+				break;
+		case 10: done = true;
+				drivePos.SetX(300.0);
+				drivePos.SetY(80.0);
+				break;
+				//Drive towards second cube
+		case 11: turning = false;
+				nc.SetOmega(1200.0);
+				nc.SetV0(800.0);
+				ele.SetEPos(Elevator::Bottom);
+				claw.Feed(1.0);
+				done = DriveStraight(220.0,ySign*93.0,8.0, true);//was x=200 tr
+				break;
+
+		case 12: autoTimer.Reset();
+				autoTimer.Start();
+				done=true;//was true
+				break;
+
+		case 13: if(autoTimer.Get()>.5){done=true;}
+				drivePos.SetX(220.0);
+				drivePos.SetY(80.0);
+				break;
+
+		//set elevator position to switch and wait for it to get their to go to next step
+		case 14: turning = false;
+				 dmc.VL=-600.0;
+				 dmc.VR=-600.0;
+				 ele.SetEPos(Elevator::Switch);
+				 if(drivePos.GetX()>240.0){vv.v=0.0;done = true;}
+				 break;
+		//setup turn to scale
+		case 15: angleToTurn = 0.0;
+				   nc.SetAngle(angleToTurn);
+				   done = true;
+				break;
+		//turn
+		case 16:  turning = true;
+				nc.SetOmega(1000);//1000
+				done = Turn();
+				break;
+		//approach scale
+		case 17:turning = false;
+				nc.SetAlpha(.005);
+				nc.SetOmega(1000.0);
+				nc.SetV0(600);
+				ele.SetEPos(Elevator::ScaleHigh);
+				done = DriveStraight(280.0, ySign*77.0,25.0, true);
+				break;
+		//fire!!!
+		case 18:claw.ResetFire();
+				claw.Fire(.6,1.5);
+				done = true;
+				break;
+		//wait for fire to finish
+		case 19:  done = !claw.isFiring();
+						break;
+
+
+//*/
+		default: dmc.VL = 0.0; dmc.VR=0.0;
+				claw.Feed(0);
 
 		}
 
@@ -1253,7 +1451,7 @@ public:
 				nc.SetAlpha(.005);//set sensitivity of curve
 				//nc.SetV0(1200);
 				ucm.Set_maxOmega(1000);//set max drive speed
-				done = ApproachWall(16.0,900);//approach wall within 13"
+				done = ApproachWall(16.0,700);//approach wall within 13"
 				if(frontSonar.GetDistance()<16.0)
 				{
 					done = true;
@@ -1319,7 +1517,7 @@ public:
 				turning = false;
 				nc.SetOmega(1200);
 				claw.Feed(1.0);
-				done = DriveStraight(75.0,ySign*1.0,16.0, false);
+				done = DriveStraight(87.0,ySign*7.0,16.0, false);
 				break;
 
 
