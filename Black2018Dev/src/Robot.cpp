@@ -198,9 +198,6 @@ public:
 
 	void AutonomousPeriodic()
 	{
-		loopTimer.Reset();
-		loopTimer.Start();
-
 		UpdateDrivePos();
 		if(gotData && autoDetermined)
 		{
@@ -218,7 +215,7 @@ public:
 							break;
 			case FarSwitch:	AutoFarSideSwitch();
 							break;
-			default:		break;
+			default:			break;
 			}
 
 
@@ -231,16 +228,11 @@ public:
 		drive.Set(dmc);
 
 		SendData();
-
-		loopTimer.Stop();
-		SmartDashboard::PutNumber("Loop Timer", loopTimer.Get());
 	}
 
 
 	void TeleopPeriodic()
 	{
-		loopTimer.Reset();
-		loopTimer.Start();
 		UpdateDrivePos();
 
 
@@ -364,9 +356,6 @@ public:
 		v.VibrateTimer();
 
 		SendData();
-
-		loopTimer.Stop();
-		SmartDashboard::PutNumber("Loop Timer",loopTimer.Get());
 	}
 
 
@@ -849,9 +838,8 @@ public:
 				angleToTurn = 0.0;
 				nc.SetAngle(angleToTurn);
 				nc.SetAlpha(.005);
-				nc.SetOmega(1000.0);
 				ele.SetEPos(Elevator::Switch);
-				nc.SetV0(1100);
+				nc.SetV0(700);
 				done = DriveStraighter(300.0,initPositions[spotSelected][1],4.0, true);
 				break;
 
@@ -868,152 +856,30 @@ public:
 				break;
 
 				//align with wall
-		case 4:	done = ApproachRearWall(8.0,900.0);
+/*		case 4:	done = ApproachRearWall(16.0,500.0);
 				//raise to lower scale here
-				ele.SetEPos(Elevator::ScaleLow);
 				break;
 
-		case 5: done = DepartRearWall(26.0,700.0);
-				ele.SetEPos(Elevator::ScaleHigh);
-				break;
 				//raise to high elevator
-		case 6:	ele.SetEPos(Elevator::ScaleHigh);
-				if(ele.GetError()<4000.0){done = true;} //wait till we are close.
-				claw.ResetFire();
+		case 5:	ele.SetEPos(Elevator::ScaleHigh);
+				if(ele.GetError()<4000){done = true;} //wait till we are close.
 				break;
 
 				//shoot!
-		case 7:	claw.Fire(.6,.5);
+		case 6:	claw.claw.Fire(.8,.5);
 				done = true;
 				break;
 
 				//are we done shooting
-		case 8: done = !claw.isFiring();
+		case 7: done = !claw.isFiring();
 				break;
 
-		case 9: done = ApproachRearWall(16.0, 700.0);
-				break;
 				//drop ele
-		case 10: ele.SetEPos(Elevator::Bottom);
+		case 8:	ele.SetEPos(Elevator::Bottom);
 				if(ele.GetError()<4000){done = true;} //wait till we are close.
 				break;
 
-		case 11:angleToTurn = atan2(ySign*80.0-drivePos.GetY(),200.0-drivePos.GetX());
-				angleToTurn = CleanAngle(angleToTurn);
-				nc.SetAngle(angleToTurn);
-				done = true;
-				break;
-
-		case 12: turning = true;
-				nc.SetOmega(1200);
-				done = Turn();
-				break;
-
-		case 13:
-//*/
-		default: dmc.VL = 0.0; dmc.VR=0.0;
-
-		}
-
-		if(done)
-		{
-			done = false;
-			autoStep++;
-		}
-
-	}
-	void AutoNearSideScale2()
-	{
-
-		//AutoStraight();
-		bool done = false;
-
-		double ySign = 1.0;//used to flip the Y value
-		if(!ourSwitch)
-		{
-			ySign = -1.0;
-		}
-		ucm.Set_maxOmega(2000);
-		nc.SetP(1800.0);
-		nc.SetI(0.0);
-		nc.SetD(8000.0);
-
-		switch(autoStep)
-		{
-				//deploy cube/shooter
-		case 0: turning = false;
-				ele.SetEPos(Elevator::Bottom);
-				autoStep++;
-				break;
-
-				//drive straight 200"
-		case 1: turning = false;
-				angleToTurn = 0.0;
-				nc.SetAngle(angleToTurn);
-				nc.SetAlpha(.005);
-				nc.SetOmega(1000.0);
-				ele.SetEPos(Elevator::Switch);
-				nc.SetV0(1100);
-				done = DriveStraighter(290.0,initPositions[spotSelected][1],4.0, true);
-				break;
-
-				//setup 90deg turn
-		case 2: angleToTurn = -ySign*3.14159/4.0;//-90 deg in rad for left side, 90 deg on right
-				nc.SetAngle(angleToTurn);
-				done = true;
-				break;
-
-				//turn
-		case 3: turning = true;
-				nc.SetOmega(1200);
-				done = Turn();
-				break;
-
-				//align with wall
-		case 4:	done = true;//ApproachRearWall(8.0,900.0);
-				//raise to lower scale here
-				ele.SetEPos(Elevator::ScaleLow);
-				break;
-
-		case 5: done = true;//DepartRearWall(26.0,700.0);
-				ele.SetEPos(Elevator::ScaleHigh);
-				break;
-				//raise to high elevator
-		case 6:	ele.SetEPos(Elevator::ScaleHigh);
-				if(ele.GetError()<4000.0){done = true;} //wait till we are close.
-				claw.ResetFire();
-				break;
-
-				//shoot!
-		case 7:	claw.Fire(.6,.5);
-				done = true;
-				break;
-
-				//are we done shooting
-		case 8: done = !claw.isFiring();
-				break;
-
-		case 9: done = true;//ApproachRearWall(16.0, 700.0);
-				break;
-				//drop ele
-		case 10: ele.SetEPos(Elevator::Bottom);
-				if(ele.GetError()<4000){done = true;} //wait till we are close.
-				break;
-
-		case 11:angleToTurn = atan2(ySign*80.0-drivePos.GetY(),200.0-drivePos.GetX());
-				angleToTurn = CleanAngle(angleToTurn);
-				nc.SetAngle(angleToTurn);
-				done = true;
-				break;
-
-		case 12: turning = true;
-				nc.SetOmega(1200);
-				done = Turn();
-				break;
-
-		case 13:
-//*/
-		default: dmc.VL = 0.0; dmc.VR=0.0;
+//*/		default: dmc.VL = 0.0; dmc.VR=0.0;
 
 		}
 
@@ -1054,24 +920,55 @@ public:
 				nc.SetAlpha(.005);
 				ele.SetEPos(Elevator::Travel);
 				nc.SetV0(1000);
-				done = DriveStraight(222.0,initPositions[spotSelected][1],4.0, true);
+				done = DriveStraighter(240.0,initPositions[spotSelected][1],4.0, true);
 				break;
-		case 2: angleToTurn = ySign*3.14159/2.0;
+		case 2: angleToTurn = -ySign*3.14159/2.0;
 				nc.SetAngle(angleToTurn);
-				//ele.SetEPos(Elevator::Switch);
+				ele.SetEPos(Elevator::Switch);
 				done = true;
 				break;
 		case 3: turning = true;
-				nc.SetOmega(900);
+				nc.SetOmega(1200);
 				done = Turn();
 				break;
-
-		case 4: nc.SetOmega(1000);
-				nc.SetAlpha(.005);
-				nc.SetV0(700);
-				done = DriveStraight(222.0, 0.0, 12.0, false);
+/*		case 4: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				done = ApproachWall(13.0,600.0);
 				break;
-
+		case 5: turning = false;
+				autoStep++;
+				autoTimer.Start();
+				break;
+		case 6:	turning = false;
+				claw.Shoot(.5);
+				if(autoTimer.Get()>0.5)
+				{
+					autoTimer.Stop();
+					autoStep++;
+				}
+				break;
+		case 7: turning = false;
+				claw.Shoot(0.0);
+				autoStep++;
+				break;
+		case 8: nc.SetAlpha(.001);
+				nc.SetV0(800);
+				turning = false;
+				nc.SetOmega(1200);
+				done = ApproachRearWall(24.0,700);
+				break;
+		case 9: ele.SetEPos(Elevator::Bottom);
+				angleToTurn = -ySign*3.14159/4.0;
+				nc.SetAngle(angleToTurn);
+				done = true;
+				break;
+		case 10: turning = true;
+				nc.SetOmega(1200);
+				done = Turn();
+				break;
+//*/
 		default: dmc.VL = 0.0; dmc.VR=0.0;
 		}
 
@@ -1215,7 +1112,7 @@ public:
 				break;
 				//turn to way point
 		case 3: turning = true;//start turn
-				nc.SetOmega(1200);//set max turn speed
+				nc.SetOmega(1500);//set max turn speed
 				done = Turn();//turn
 				break;
 				//drive to waypoint
@@ -1248,7 +1145,7 @@ public:
 				nc.SetAlpha(.005);//set sensitivity of curve
 				//nc.SetV0(1200);
 				ucm.Set_maxOmega(1000);//set max drive speed
-				done = ApproachWall(16.0,700);//approach wall within 13"
+				done = ApproachWall(16.0,600);//approach wall within 13"
 				if(frontSonar.GetDistance()<16.0)
 				{
 					done = true;
@@ -1268,7 +1165,7 @@ public:
 				//FIRE!!!
 		case 9:	turning = false;
 				claw.Shoot(.5);//set shooter speed
-				if(autoTimer.Get()>0.5)//shoot for at least .75sec
+				if(autoTimer.Get()>0.75)//shoot for at least .75sec
 				{
 					autoTimer.Stop();//stop timer
 					autoStep++;//next step
@@ -1312,122 +1209,12 @@ public:
 		case 15: nc.SetAlpha(.001);
 				nc.SetV0(800);
 				turning = false;
-				nc.SetOmega(1000);
-				claw.Feed(1.0);
-				done = DriveStraight(75.0,ySign*1.0,16.0, false);
-				break;
-
-		case 16: autoTimer.Reset();
-				autoTimer.Start();
-				done=true;
-				break;
-		case 17: if(autoTimer.Get()>.25){done=true;}
-				break;
-		case 18: nc.SetAlpha(.001);
-				nc.SetV0(800);
-				turning = false;
-				nc.SetOmega(1200);
-				claw.Feed(.8);
-				ele.SetEPos(Elevator::Travel);
-				done = DriveStraight(30.0,ySign*50.0,10.0, false);
-				break;
-				//setup turn to switch
-
-		case 19: angleToTurn = 0.0;//set angle to face switch
-				nc.SetAngle(angleToTurn);//set angle
-				turning = true;//set turn flag
-				claw.Feed(0.3);
-				done = true;//go to next step
-				break;
-
-				//turn to switch
-		case 20:nc.SetOmega(1500);//set max speed
-				done = Turn();//turn
-				ele.SetEPos(Elevator::Switch);
-				if(!(fabs(drivePos.GetPhi())<.02))//check error, error was passing through check
-				{
-					done = false;
-				}
-				break;
-
-				//Approach switch wall
-		case 21: turning = false;//turn off turn flag
-				nc.SetAlpha(.005);//set sensitivity of curve
-				//nc.SetV0(1200);
-				ucm.Set_maxOmega(1000);//set max drive speed
-				done = ApproachWall(16.0,900);//approach wall within 13"
-				if(frontSonar.GetDistance()<16.0)
-				{
-					done = true;
-				}else
-				{
-					done = false;
-				}
-				vv.w=0;//no turning allowed
-				break;
-
-				//FIRE!!!!
-		case 22: turning = false;
-				autoStep++;//go to next step
-				autoTimer.Reset();
-				autoTimer.Start();//Start timer
-				break;
-				//FIRE!!!
-		case 23:	turning = false;
-				claw.Shoot(.5);//set shooter speed
-				if(autoTimer.Get()>0.5)//shoot for at least .75sec
-				{
-					autoTimer.Stop();//stop timer
-					autoStep++;//next step
-				}
-				break;
-				//HOLD FIRE!
-		case 24: turning = false;
-				claw.Shoot(0.0);//stop shooting
-				autoStep++;//Next step
-				break;
-
-				//reset drive position,
-				//assuming we lost position by hitting wall
-		case 25: drivePos.SetX(90.0);//update with sonar
-				drivePos.SetY(ySign*50.0);//pray this is right
-				done = true;
-				break;
-
-				//backup to
-		case 26: nc.SetAlpha(.005);
-				nc.SetV0(800);
-				turning = false;
-				nc.SetOmega(1200);
-				done = DriveStraight(30.0,drivePos.GetY(),4.0, true);
-				break;
-
-				//setup turn to cubes
-		case 27: angleToTurn = atan2((ySign*1.0-drivePos.GetY()),(80.0-drivePos.GetX()));
-				nc.SetAngle(angleToTurn);
-				ele.SetEPos(Elevator::Bottom);
-				done = true;
-				break;
-
-				//turn to cubes
-		case 28: turning = true;
-				nc.SetOmega(2000);
-				done = Turn();
-				break;
-
-				//approach cubes
-		case 29: nc.SetAlpha(.001);
-				nc.SetV0(800);
-				turning = false;
 				nc.SetOmega(1200);
 				claw.Feed(1.0);
-				done = DriveStraight(75.0,ySign*1.0,16.0, false);
+				done = DriveStraight(80.0,ySign*1.0,20.0, false);
 				break;
-
-
-
 //*/
-		default: dmc.VL = 0.0; dmc.VR=0.0; claw.Feed(0.0);
+		default: dmc.VL = 0.0; dmc.VR=0.0;
 		}
 
 		if(done)
@@ -1520,7 +1307,6 @@ public:
 			return true;
 		}
 	}
-
 	bool DriveStraighter(double x, double y, double errOk, bool xMatters)
 	{
 		u   = nc.GoToGoal(x, y);
@@ -1610,7 +1396,6 @@ public:
 		}
 
 	}
-
 	bool ApproachRearWall(double goal, double maxSpeed)
 	{
 		double e = rearSonar.GetDistance()-goal;
@@ -1635,74 +1420,6 @@ public:
 			return true;
 		}
 
-	}
-
-	bool DepartRearWall(double goal, double maxSpeed)
-	{
-		double e = rearSonar.GetDistance()-goal;
-
-		if(fabs(e)>1.0)
-		{
-			//if(e>0)
-			{
-				vv.v = maxSpeed*(1-exp(-.01*e*e));
-			//}else
-			//{
-				//vv.v = -maxSpeed*(1-exp(-.1*e*e));
-			}
-			vv.w = 0.0;
-			dmc = ucm.DifferentialOutput(vv);
-			return false;
-		}else
-		{
-			vv.v = 0.0;
-			vv.w = 0.0;
-			dmc = ucm.DifferentialOutput(vv);
-			return true;
-		}
-
-	}
-
-	bool FollowLeftWall(double x, double y, double errOk, double wallDistance, double turnPower, bool xMatters)
-	{
-		double wallError = wallDistance - leftSonar.GetDistance();
-		wallError = (wallDistance/8.0)*turnPower;
-
-		if(wallError>turnPower)
-		{
-			wallError = turnPower;
-		}
-
-		u   = nc.GoToGoal(x, y);
-		//vv  = ucm.Tracker(u.GetX(), u.GetY());
-
-		vv.v = u.GetX();
-		vv.w = u.GetY() - wallError;
-		dmc = ucm.DifferentialOutput(vv);
-		//dmc = ucm.GetDifferentialMotorCommand(u.GetX(), u.GetY());
-
-		autoVecErr.SetX(x-drivePos.GetX());
-		autoVecErr.SetY(y-drivePos.GetY());
-
-		double matters;
-		if (xMatters)
-		{
-			matters = autoVecErr.GetX();
-		}else
-		{
-			matters = autoVecErr.GetY();
-		}
-
-		if(fabs(matters)>=errOk)//if(e.GetX()>=errOk)
-		{
-			//drive.Set(dmc);
-			return false;
-		}else
-		{
-			dmc.VL = 0.0;
-			dmc.VR = 0.0;
-			return true;
-		}
 	}
 
 	void RollSafety()
@@ -1831,9 +1548,6 @@ public:
 	Vector2D autoVecErr;
 	double turnErr;
 	Timer autoTimer;
-
-	Timer loopTimer;
-
 
 	double simx, simy;
 	bool useSimData;
