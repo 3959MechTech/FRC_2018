@@ -922,6 +922,108 @@ public:
 		}
 
 	}
+	void AutoNearSideScale2()
+	{
+
+		//AutoStraight();
+		bool done = false;
+
+		double ySign = 1.0;//used to flip the Y value
+		if(!ourSwitch)
+		{
+			ySign = -1.0;
+		}
+		ucm.Set_maxOmega(2000);
+		nc.SetP(1800.0);
+		nc.SetI(0.0);
+		nc.SetD(8000.0);
+
+		switch(autoStep)
+		{
+				//deploy cube/shooter
+		case 0: turning = false;
+				ele.SetEPos(Elevator::Bottom);
+				autoStep++;
+				break;
+
+				//drive straight 200"
+		case 1: turning = false;
+				angleToTurn = 0.0;
+				nc.SetAngle(angleToTurn);
+				nc.SetAlpha(.005);
+				nc.SetOmega(1000.0);
+				ele.SetEPos(Elevator::Switch);
+				nc.SetV0(1100);
+				done = DriveStraighter(290.0,initPositions[spotSelected][1],4.0, true);
+				break;
+
+				//setup 90deg turn
+		case 2: angleToTurn = -ySign*3.14159/4.0;//-90 deg in rad for left side, 90 deg on right
+				nc.SetAngle(angleToTurn);
+				done = true;
+				break;
+
+				//turn
+		case 3: turning = true;
+				nc.SetOmega(1200);
+				done = Turn();
+				break;
+
+				//align with wall
+		case 4:	done = true;//ApproachRearWall(8.0,900.0);
+				//raise to lower scale here
+				ele.SetEPos(Elevator::ScaleLow);
+				break;
+
+		case 5: done = true;//DepartRearWall(26.0,700.0);
+				ele.SetEPos(Elevator::ScaleHigh);
+				break;
+				//raise to high elevator
+		case 6:	ele.SetEPos(Elevator::ScaleHigh);
+				if(ele.GetError()<4000.0){done = true;} //wait till we are close.
+				claw.ResetFire();
+				break;
+
+				//shoot!
+		case 7:	claw.Fire(.6,.5);
+				done = true;
+				break;
+
+				//are we done shooting
+		case 8: done = !claw.isFiring();
+				break;
+
+		case 9: done = true;//ApproachRearWall(16.0, 700.0);
+				break;
+				//drop ele
+		case 10: ele.SetEPos(Elevator::Bottom);
+				if(ele.GetError()<4000){done = true;} //wait till we are close.
+				break;
+
+		case 11:angleToTurn = atan2(ySign*80.0-drivePos.GetY(),200.0-drivePos.GetX());
+				angleToTurn = CleanAngle(angleToTurn);
+				nc.SetAngle(angleToTurn);
+				done = true;
+				break;
+
+		case 12: turning = true;
+				nc.SetOmega(1200);
+				done = Turn();
+				break;
+
+		case 13:
+//*/
+		default: dmc.VL = 0.0; dmc.VR=0.0;
+
+		}
+
+		if(done)
+		{
+			done = false;
+			autoStep++;
+		}
+
+	}
 
 	void AutoFarSideScale()
 	{
@@ -1418,6 +1520,7 @@ public:
 			return true;
 		}
 	}
+
 	bool DriveStraighter(double x, double y, double errOk, bool xMatters)
 	{
 		u   = nc.GoToGoal(x, y);
@@ -1507,6 +1610,7 @@ public:
 		}
 
 	}
+
 	bool ApproachRearWall(double goal, double maxSpeed)
 	{
 		double e = rearSonar.GetDistance()-goal;
@@ -1558,6 +1662,49 @@ public:
 		}
 
 	}
+
+	bool FollowLeftWall(double x, double y, double errOk, double wallDistance, double turnPower, bool xMatters)
+	{
+		double wallError = wallDistance - leftSonar.GetDistance();
+		wallError = (wallDistance/8.0)*turnPower;
+
+		if(wallError>turnPower)
+		{
+			wallError = turnPower;
+		}
+
+		u   = nc.GoToGoal(x, y);
+		//vv  = ucm.Tracker(u.GetX(), u.GetY());
+
+		vv.v = u.GetX();
+		vv.w = u.GetY() - wallError;
+		dmc = ucm.DifferentialOutput(vv);
+		//dmc = ucm.GetDifferentialMotorCommand(u.GetX(), u.GetY());
+
+		autoVecErr.SetX(x-drivePos.GetX());
+		autoVecErr.SetY(y-drivePos.GetY());
+
+		double matters;
+		if (xMatters)
+		{
+			matters = autoVecErr.GetX();
+		}else
+		{
+			matters = autoVecErr.GetY();
+		}
+
+		if(fabs(matters)>=errOk)//if(e.GetX()>=errOk)
+		{
+			//drive.Set(dmc);
+			return false;
+		}else
+		{
+			dmc.VL = 0.0;
+			dmc.VR = 0.0;
+			return true;
+		}
+	}
+
 	void RollSafety()
 	{
 		if(fabs(eulers.z)>8.0)//roll angle of +/-8 deg lower tower.
