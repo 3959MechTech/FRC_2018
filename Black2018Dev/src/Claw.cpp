@@ -67,5 +67,11 @@ bool Claw::isFiring()
 void Claw::SendData(std::string name)
 {
 	SmartDashboard::PutBoolean(name + " Sensor",sensor.Get());
+	SmartDashboard::PutNumber(name+" RM Current",rm.GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" RM Voltage",rm.GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" RM Output%",rm.GetMotorOutputPercent());
+	SmartDashboard::PutNumber(name+" RS Current",lm.GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" RS Voltage",lm.GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" RS Output%",lm.GetMotorOutputPercent());
 	//SmartDashboard::PutNumber(name + " Speed",lm.);
 }
