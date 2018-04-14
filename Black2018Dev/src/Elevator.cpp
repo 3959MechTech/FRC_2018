@@ -126,6 +126,37 @@ void Elevator::SendData(std::string name)
 	SmartDashboard::PutNumber(name+" Slave Output%",eSTalon.GetMotorOutputPercent());
 
 }
+void Elevator::OpenLog(std::string name)
+{
+	if(log==NULL)
+	{
+		logName = name +".txt";
+
+		log = fopen(logName.c_str(),"a");
+	}
+	if(log!=NULL)
+	{
+		//fprintf(log, "Time, SensorState, RM Current, RM Voltage, RM Output Percent, LM Current, LM Voltage, LM Output Percent\r\n");//header
+	}
+}
+
+void Elevator::CloseLog()
+{
+	if(log!=NULL)
+	{
+		fclose(log);
+	}
+}
+
+void Elevator::Log()
+{
+	if(log!=NULL)
+	{
+//		fprintf(log,"%f, %d, ", RobotController::GetFPGATime(), sensor.Get());
+//		fprintf(log,"%f, %f, %f, "  , rm.GetOutputCurrent(), rm.GetMotorOutputVoltage(), rm.GetMotorOutputPercent());
+//		fprintf(log,"%f, %f, %f\r\n", lm.GetOutputCurrent(), lm.GetMotorOutputVoltage(), lm.GetMotorOutputPercent());
+	}
+}
 
 double Elevator::GetHeight(EPos pos)
 {

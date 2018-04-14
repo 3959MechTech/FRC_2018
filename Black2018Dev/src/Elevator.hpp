@@ -43,7 +43,8 @@ private:
 
 	EPos current;
 
-
+	FILE*	log;
+	std::string logName;
 
 public:
 
@@ -51,6 +52,9 @@ public:
 	Elevator(int eTalon, int eSTalon);
 
 	void SendData(std::string name="Elevator");
+	void OpenLog(std::string name);
+	void CloseLog();
+	void Log();
 
 	double GetHeight(EPos);
 	double GetRamp(EPos);

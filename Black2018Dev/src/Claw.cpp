@@ -70,8 +70,40 @@ void Claw::SendData(std::string name)
 	SmartDashboard::PutNumber(name+" RM Current",rm.GetOutputCurrent());
 	SmartDashboard::PutNumber(name+" RM Voltage",rm.GetMotorOutputVoltage());
 	SmartDashboard::PutNumber(name+" RM Output%",rm.GetMotorOutputPercent());
-	SmartDashboard::PutNumber(name+" RS Current",lm.GetOutputCurrent());
-	SmartDashboard::PutNumber(name+" RS Voltage",lm.GetMotorOutputVoltage());
-	SmartDashboard::PutNumber(name+" RS Output%",lm.GetMotorOutputPercent());
+	SmartDashboard::PutNumber(name+" LM Current",lm.GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" LM Voltage",lm.GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" LM Output%",lm.GetMotorOutputPercent());
 	//SmartDashboard::PutNumber(name + " Speed",lm.);
+}
+
+void Claw::OpenLog(std::string name)
+{
+	if(log==NULL)
+	{
+		logName = name +".txt";
+
+		log = fopen(logName.c_str(),"a");
+	}
+	if(log!=NULL)
+	{
+		fprintf(log, "Time, SensorState, RM Current, RM Voltage, RM Output Percent, LM Current, LM Voltage, LM Output Percent\r\n");//header
+	}
+}
+
+void Claw::CloseLog()
+{
+	if(log!=NULL)
+	{
+		fclose(log);
+	}
+}
+
+void Claw::Log()
+{
+	if(log!=NULL)
+	{
+		fprintf(log,"%f, %d, ", RobotController::GetFPGATime(), sensor.Get());
+		fprintf(log,"%f, %f, %f, "  , rm.GetOutputCurrent(), rm.GetMotorOutputVoltage(), rm.GetMotorOutputPercent());
+		fprintf(log,"%f, %f, %f\r\n", lm.GetOutputCurrent(), lm.GetMotorOutputVoltage(), lm.GetMotorOutputPercent());
+	}
 }
