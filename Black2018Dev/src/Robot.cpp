@@ -1063,7 +1063,7 @@ public:
 				break;
 
 		case 12: autoTimer.Reset();
-				autoTimer.Start();
+				 autoTimer.Start();
 				done=true;//was true
 				break;
 
@@ -1101,14 +1101,14 @@ public:
 		case 18: if(fabs(ele.GetError())<4000.0)
 				 {
 					claw.ResetFire();
-					claw.Fire(.6,1.5);
+					claw.Fire(.6,.5);
 					done = true;
 				 }
 				break;
-		//wait for fire to finish
-		case 19:  done = !claw.isFiring();
-						break;
 
+				//wait for fire to finish
+		case 19:  done = !claw.isFiring();
+				break;
 
 //*/
 		default: dmc.VL = 0.0; dmc.VR=0.0;
