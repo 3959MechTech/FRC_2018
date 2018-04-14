@@ -112,10 +112,18 @@ void Elevator::SendData(std::string name)
 	SmartDashboard::PutNumber(name+" Closed Loop Target", eTalon.GetClosedLoopTarget(0));
 	SmartDashboard::PutNumber(name+" Bottom Limit Switch", eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,kTimeOut));
 
+	/*
 	SmartDashboard::PutNumber(name+" F",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_F,0,10));
 	SmartDashboard::PutNumber(name+" P",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,10));
 	SmartDashboard::PutNumber(name+" I",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
 	SmartDashboard::PutNumber(name+" D",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
+	*/
+	SmartDashboard::PutNumber(name+" Master Current",eTalon.GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" Master Voltage",eTalon.GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" Master Output%",eTalon.GetMotorOutputPercent());
+	SmartDashboard::PutNumber(name+" Slave Current",eSTalon.GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" Slave Voltage",eSTalon.GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" Slave Output%",eSTalon.GetMotorOutputPercent());
 
 }
 

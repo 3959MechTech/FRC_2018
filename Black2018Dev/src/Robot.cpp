@@ -513,9 +513,9 @@ public:
 		SmartDashboard::PutNumber("Battery Power",DriverStation::GetInstance().GetBatteryVoltage());
 		SmartDashboard::PutNumber("autoStep",autoStep);
 
-		SmartDashboard::PutNumber("NC PID Angle", nc.GetAngle());
-		SmartDashboard::PutNumber("NC PID Output", nc.Turn());
-		SmartDashboard::PutNumber("NC PID Error", nc.GetPIDError());
+		//SmartDashboard::PutNumber("NC PID Angle", nc.GetAngle());
+		//SmartDashboard::PutNumber("NC PID Output", nc.Turn());
+		//SmartDashboard::PutNumber("NC PID Error", nc.GetPIDError());
 		SmartDashboard::PutNumber("Auto Angle Target", angleToTurn);
 		SmartDashboard::PutNumber("Auto Angle Error", CleanAngle(angleToTurn-drivePos.GetPhi()));
 
@@ -530,11 +530,11 @@ public:
 		nc.SetAlpha(alpha);
 		nc.SetOmega(prefs->GetDouble("maxOmega",nc.GetOmega()));
 		//ucm.Set_maxOmega(prefs->GetDouble("maxOmega",ucm.Get_maxOmega()));
-
+/*
 		nc.SetP(prefs->GetDouble("NC P",nc.GetP()));
 		nc.SetI(prefs->GetDouble("NC I",nc.GetI()));
 		nc.SetD(prefs->GetDouble("NC D",nc.GetD()));
-/*
+
 		double lf,lp,li,ld,rf,rp,ri,rd;
 		lf = drive.GetLeftF();
 		lp = drive.GetLeftP();
@@ -556,7 +556,7 @@ public:
 */
 		drivePos.SendData("Drive Pose");
 		ele.SendData();
-		//claw.SendData();
+		claw.SendData();
 		drive.SendData();
 
 		SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
@@ -571,8 +571,8 @@ public:
 		int dl =data.length();
 		if(dl>0)
 		{
-			SmartDashboard::PutNumber("GD Length", data.length());
-			SmartDashboard::PutString("GD Data", data);
+//			SmartDashboard::PutNumber("GD Length", data.length());
+//			SmartDashboard::PutString("GD Data", data);
 			SmartDashboard::PutBoolean("our Switch", ourSwitch);
 			SmartDashboard::PutBoolean("our scale", scale);
 			SmartDashboard::PutBoolean("other Switch", theirSwitch);

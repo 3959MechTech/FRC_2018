@@ -315,7 +315,20 @@ void MechTechDifferential::SendData(std::string name )
 	//SmartDashboard::PutNumber(name+" Right I",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
 	//SmartDashboard::PutNumber(name+" Right D",rM->ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
 
-	SmartDashboard::PutNumber(name+" R vs L Speed", rM->GetSelectedSensorVelocity(0)-lM->GetSelectedSensorVelocity(0));
+	//SmartDashboard::PutNumber(name+" R vs L Speed", rM->GetSelectedSensorVelocity(0)-lM->GetSelectedSensorVelocity(0));
+
+	SmartDashboard::PutNumber(name+" RM Current",rM->GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" RM Voltage",rM->GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" RM Output%",rM->GetMotorOutputPercent());
+	SmartDashboard::PutNumber(name+" RS Current",rS->GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" RS Voltage",rS->GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" RS Output%",rS->GetMotorOutputPercent());
+	SmartDashboard::PutNumber(name+" LM Current",lM->GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" LM Voltage",lM->GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" LM Output%",lM->GetMotorOutputPercent());
+	SmartDashboard::PutNumber(name+" LS Current",lS->GetOutputCurrent());
+	SmartDashboard::PutNumber(name+" LS Voltage",lS->GetMotorOutputVoltage());
+	SmartDashboard::PutNumber(name+" LS Output%",lS->GetMotorOutputPercent());
 
 }
 
