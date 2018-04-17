@@ -89,7 +89,7 @@ Elevator::Elevator(int masterMotor, int slaveMotor):eTalon(masterMotor),eSTalon(
 
 	//Down Moves
 	eTalon.Config_kF(1,0,kTimeOut);
-	eTalon.Config_kP(1,.3,kTimeOut);//original @.05
+	eTalon.Config_kP(1,.6,kTimeOut);//original @.05
 	eTalon.Config_kI(1,0,kTimeOut);
 	eTalon.Config_kD(1,0.8,kTimeOut);
 
