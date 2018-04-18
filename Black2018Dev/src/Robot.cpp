@@ -30,6 +30,7 @@
 #include "NavController.hpp"
 #include "AnalogSonar.hpp"
 
+#include <fstream>
 
 #define vibStrength 10000
 
@@ -111,6 +112,12 @@ public:
 
 		GetFMSData();
 		SendData();
+		lastLoopTime = 0.0;
+
+		//StartLogging();
+		logTest = false;
+		logStatus = "init";
+
 	}
 
 	void DetermineAuto()
@@ -184,6 +191,16 @@ public:
 	void AutonomousInit() override
 	{
 		ResetPose();
+/*
+		bool logbool = StartLogging();
+		if(logbool)
+		{
+			logStatus = "Passed";
+		}else
+		{
+			logStatus = "Failing";
+		}
+*/
 		GetFMSData();
 
 		autoDetermined=false;
@@ -193,6 +210,7 @@ public:
 
 		DetermineAuto();
 
+		//Log("auto");
 		SendData();
 	}
 
@@ -200,8 +218,9 @@ public:
 	{
 		loopTimer.Reset();
 		loopTimer.Start();
-
 		UpdateDrivePos();
+		UpdateSonars();
+
 		if(gotData && autoDetermined)
 		{
 			switch(autoSelected)
@@ -231,9 +250,10 @@ public:
 		drive.Set(dmc);
 
 		SendData();
-
+		//Log("auto");
 		loopTimer.Stop();
-		SmartDashboard::PutNumber("Loop Timer", loopTimer.Get());
+		lastLoopTime = loopTimer.Get();
+		SmartDashboard::PutNumber("Loop Timer",lastLoopTime);
 	}
 
 
@@ -242,7 +262,7 @@ public:
 		loopTimer.Reset();
 		loopTimer.Start();
 		UpdateDrivePos();
-
+		UpdateSonars();
 
 		double rt= stick2.GetTriggerAxis(frc::GenericHID::kRightHand);
 		double lt= stick2.GetTriggerAxis(frc::GenericHID::kLeftHand);
@@ -364,9 +384,10 @@ public:
 		v.VibrateTimer();
 
 		SendData();
-
+		//Log("tele");
 		loopTimer.Stop();
-		SmartDashboard::PutNumber("Loop Timer",loopTimer.Get());
+		lastLoopTime = loopTimer.Get();
+		SmartDashboard::PutNumber("Loop Timer",lastLoopTime);
 	}
 
 
@@ -374,12 +395,23 @@ public:
 	void TeleopInit()
 	{
 		//ResetPose();
+/*
+		bool logbool = StartLogging();
+		if(logbool)
+		{
+			logStatus = "Passed";
+		}else
+		{
+			logStatus = "Failing";
+		}
+*/
 		ele.SetEPos(ele.GetEPos());
 		SendData();
 	}
 
 	void TestPeriodic() {
 		UpdateDrivePos();
+		UpdateSonars();
 
 /*
 		double rt= stick2.GetTriggerAxis(frc::GenericHID::kRightHand);
@@ -481,10 +513,27 @@ public:
 */
 		//Drive();
 	//	v.VibrateTimer();
+		Log("test");
+	}
+
+	void TestInit()
+	{
+		bool logbool = StartLogging();
+		if(logbool)
+		{
+			logStatus = "Passed";
+		}else
+		{
+			logStatus = "Failing";
+		}
 	}
 
 	void DisabledPeriodic()
 	{
+
+		SmartDashboard::PutString("Log File Status",logStatus);
+
+
 		if(stick3.GetAButton())
 		{
 			ResetPose();
@@ -493,11 +542,13 @@ public:
 
 		GetFMSData();
 		UpdateDrivePos();
+		UpdateSonars();
 		SendData();
 	}
 	void DisabledInit()
 	{
 		//ResetPose();
+		StopLogging();
 		GetFMSData();
 		SendData();
 	}
@@ -519,10 +570,10 @@ public:
 		SmartDashboard::PutNumber("Auto Angle Target", angleToTurn);
 		SmartDashboard::PutNumber("Auto Angle Error", CleanAngle(angleToTurn-drivePos.GetPhi()));
 
-		SmartDashboard::PutNumber("Front Sonar Distance", frontSonar.GetDistance());
-		SmartDashboard::PutNumber("Rear  Sonar Distance", rearSonar.GetDistance());
-		SmartDashboard::PutNumber("Left  Sonar Distance", leftSonar.GetDistance());
-		SmartDashboard::PutNumber("Right  Sonar Distance", rightSonar.GetDistance());
+		SmartDashboard::PutNumber("Front Sonar Distance", frontSonarDistance);
+		SmartDashboard::PutNumber("Rear  Sonar Distance", rearSonarDistance);
+		SmartDashboard::PutNumber("Left  Sonar Distance", leftSonarDistance);
+		SmartDashboard::PutNumber("Right  Sonar Distance", rightSonarDistance);
 
 		v0 = prefs->GetDouble("v0",nc.GetV0());
 		alpha = prefs->GetDouble("alpha",nc.GetAlpha());
@@ -559,7 +610,7 @@ public:
 		claw.SendData();
 		drive.SendData();
 
-		SmartDashboard::PutNumber("IMU Chip ID", imu.GetChipID());
+		SmartDashboard::PutNumber("IMU Chip ID", imuChipId);
 		SmartDashboard::PutNumber("IMU Euler X", eulers.x);
 		SmartDashboard::PutNumber("IMU Euler Y", eulers.y);
 		SmartDashboard::PutNumber("IMU Euler Z", eulers.z);
@@ -594,6 +645,7 @@ public:
 	{
 
 		//grab euler angles from imu and store in member vector.
+		imuChipId = imu.GetChipID();
 		eulers = imu.GetVector(BNO055::vector_type_t::VECTOR_EULER);
 
 		//convert yaw angle to radians
@@ -1813,82 +1865,161 @@ public:
 		}
 	}
 
-	void DebugStick()
+	void UpdateSonars()
 	{
-		if(stick2.GetYButtonPressed())
+		frontSonarDistance = frontSonar.GetDistance();
+		rearSonarDistance = rearSonar.GetDistance();
+		leftSonarDistance = leftSonar.GetDistance();
+		rightSonarDistance = rightSonar.GetDistance();
+	}
+
+	bool StartLogging()
+	{
+		StopLogging();
+
+		int id;
+
+		logIds.open("/home/lvuser/LogId.txt", std::ios::in);
+		if(logIds.is_open())
 		{
-			ele.SetEPos(Elevator::ScaleHigh);
+			logIds.seekg(-1,std::ios_base::end);
+			while(1)
+			{
+				char c;
+				logIds.get(c);
+				//If the data was at or before the 0th byte quit
+				if((int)logIds.tellg()<=1)
+				{
+					logIds.seekg(0);
+					break;
+				}
+				if(c=='\n')
+				{
+					break;
+				}else
+				{
+					logIds.seekg(-2,std::ios_base::cur);
+				}
+			}
+			//get last line
+			std::string lastLine;
+			std::getline(logIds,lastLine);
+			//convert id to int
+			if(lastLine.length()>0)
+			{
+				id = std::atoi(lastLine.c_str());
+			}else
+			{
+				id = 0;
+			}
+			id++;//increment for new id
+
+			//update log id file
+			logIds.close();
+
+
+
+		}else
+		{
+			id = 1;
 		}
 
-		if(stick2.GetBButtonPressed())
+		logIds.open("/home/lvuser/LogId.txt", std::ios::out|std::ios::app);
+
+		if(logIds.is_open())
 		{
-			ele.SetEPos(Elevator::ScaleMedium);
+			if(id==1)
+			{
+				logIds << std::to_string(id);
+			}else
+			{
+				logIds << "\n"+ std::to_string(id);
+			}
+			logIds.close();
+		}
+		std::string fn = "/home/lvuser/log/log_"+std::to_string(id) + ".csv";
+		log.open(fn, std::ios::out);
+		if(log.is_open())
+		{
+			std::string cols;
+			cols = LogHeader();
+			log << cols<<std::endl;
+		}else
+		{
+			return false;
+		}
+		return true;
+	}
+	std::string LogHeader()
+	{
+		std::string cols;
+		cols =  "state, time, battVolt, battCurrent, lastLoopTime, imuId, x, y, phi, yaw, roll, pitch, ";
+		cols += "userAuto, userPos, ourSwitch, scale, autoSelected, autoStep, ";
+		cols += "autoAngleTarget, autoAngleError, Ux, Uy, VV.v, VV.w, VL, VR, ";
+		cols += "frontSonar, rearSonar, leftSonar, rightSonar, ";
+		cols += drive.GetLogCols() + ", ";
+		cols += ele.GetLogCols() + ", ";
+		cols += claw.GetLogCols();
+		return cols;
+	}
+
+	void Log(std::string state)
+	{
+		std::string data;
+		data =  state + ", ";
+		data += std::to_string(RobotController::GetFPGATime()) + ", ";
+		data += std::to_string(pdp.GetVoltage()) + ", ";
+		data += std::to_string(pdp.GetTotalCurrent()) + ", ";
+		data += std::to_string(lastLoopTime) + ", ";
+		data += std::to_string(imuChipId) + ", ";
+		data += std::to_string(drivePos.GetX()) + ", ";
+		data += std::to_string(drivePos.GetY()) + ", ";
+		data += std::to_string(drivePos.GetPhi()) + ", ";
+		data += std::to_string(eulers.x) + ", ";
+		data += std::to_string(eulers.y) + ", ";
+		data += std::to_string(eulers.z) + ", ";
+		data += std::to_string(autoGoal.GetSelected()) + ", ";
+		data += std::to_string(startSpot.GetSelected()) + ", ";
+		data += std::to_string(ourSwitch) + ", ";
+		data += std::to_string(scale) + ", ";
+		data += std::to_string(autoSelected) + ", ";
+		data += std::to_string(autoStep) + ", ";
+		data += std::to_string(angleToTurn) + ", ";
+		data += std::to_string(CleanAngle(angleToTurn-drivePos.GetPhi())) + ", ";
+		data += std::to_string(u.GetX()) + ", ";
+		data += std::to_string(u.GetY()) + ", ";
+		data += std::to_string(vv.v) + ", ";
+		data += std::to_string(vv.w) + ", ";
+		data += std::to_string(dmc.VL) + ", ";
+		data += std::to_string(dmc.VR) + ", ";
+		data += std::to_string(frontSonarDistance) + ", ";
+		data += std::to_string(rearSonarDistance) + ", ";
+		data += std::to_string(leftSonarDistance) + ", ";
+		data += std::to_string(rightSonarDistance) + ", ";
+		data += drive.GetLogData() + ", ";
+		data += ele.GetLogData() + ", ";
+		data += claw.GetLogData();
+
+		if(log.is_open())
+		{
+			log << std::endl << data;
 		}
 
-		if(stick2.GetXButtonPressed())
+
+	}
+
+	void StopLogging()
+	{
+		if(logIds.is_open())
 		{
-			ele.SetEPos(Elevator::ScaleLow);
+			logIds.close();
+			logIds.clear();
 		}
 
-		if(stick2.GetAButtonPressed())
+		if(log.is_open())
 		{
-			ele.SetEPos(Elevator::Switch);
+			log.close();
 		}
-
-		if(stick2.GetStartButtonPressed())
-		{
-			ele.SetEPos(Elevator::Travel);
-		}
-
-		if(stick2.GetBackButtonPressed())
-		{
-			ele.SetEPos(Elevator::Bottom);
-		}
-/*
-		double s2y = -stick2.GetY(frc::GenericHID::kRightHand);
-		if(s2y>.2  || s2y<-.2)
-		{
-
-			ele.SetPosition(ele.GetSetPoint()+s2y*4000.0);
-		}
-*/
-		double lY = -stick3.GetY(frc::GenericHID::kLeftHand);
-		double rY = -stick3.GetY(frc::GenericHID::kRightHand);
-
-		if(lY>-.2 && lY<.2)
-		{
-			lY = 0.0;
-		}
-		if(rY>-.2 && rY<.2)
-		{
-			rY = 0.0;
-		}
-		double lX = -stick1.GetX(frc::GenericHID::kLeftHand);
-		double rX = -stick1.GetX(frc::GenericHID::kRightHand);
-
-		if(lX>-.2 && lX<.2)
-		{
-			lX = 0.0;
-		}
-		if(rX>-.2 && rX<.2)
-		{
-			rX = 0.0;
-		}
-
-		//split Arcade
-		vv.v = lY*1500.0;
-		vv.w = rX*2500.0;
-
-
-		//1 stick Arcade
-		//vv.v = lY*1500.0;
-		//vv.w = lX*2500.0;
-
-		dmc = ucm.DifferentialOutput(vv);
-
-		drive.Set(dmc);//Arcade Drive
-		//drive.Set(rY, lY);//Tank Drive
-		//drive.Set(rY*1000.0, lY*1000.0);
 	}
 
 public:
@@ -1933,6 +2064,7 @@ public:
 	Timer autoTimer;
 
 	Timer loopTimer;
+	double lastLoopTime;
 
 
 	double simx, simy;
@@ -1966,16 +2098,24 @@ public:
 	Vector2D goal;
 	Vector2D u;
 
-
+	std::fstream logIds;
+	std::ofstream log;
+	bool logTest;
+	std::string logStatus;
 
 	BNO055 imu{I2C::Port::kMXP};
-
+	int imuChipId;
 	Vector eulers;
 
 	AnalogSonar frontSonar{0};
 	AnalogSonar rearSonar{1};
 	AnalogSonar leftSonar{2};
 	AnalogSonar rightSonar{3};
+	double frontSonarDistance;
+	double rearSonarDistance;
+	double leftSonarDistance;
+	double rightSonarDistance;
+
 
 	NavController nc{&drivePos};
 	UnicycleController ucm{&drivePos};
@@ -1988,6 +2128,7 @@ public:
 	XboxController stick3{2};
 
 	VibController v{&stick1,&stick2};
+	PowerDistributionPanel pdp{};
 };
 
 START_ROBOT_CLASS(Robot)

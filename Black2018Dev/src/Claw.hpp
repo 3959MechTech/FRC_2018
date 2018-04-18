@@ -10,7 +10,6 @@
 
 #include <WPILib.h>
 #include <ctre/phoenix.h>
-#include <cstdio>
 
 class Claw
 {
@@ -21,8 +20,6 @@ private:
 
 	Timer 	fireTimer;
 	double 	fireTime;
-	FILE*	log;
-	std::string logName;
 
 
 public:
@@ -34,9 +31,8 @@ public:
     bool isFiring();
     void Fire(double speed, double dur);
 
-    void OpenLog(std::string name);
-    void CloseLog();
-    void Log();
+    std::string GetLogCols();
+	std::string GetLogData();
 
     void SendData(std::string name = "Claw");
 };

@@ -14,8 +14,7 @@ Claw::Claw(int leftMotor, int rightMotor, int sensorport): lm(leftMotor), rm(rig
 	rm.SetInverted(true);
 
 	fireTime = 0.5;
-	log = NULL;
-	logName = "";
+
 }
 
 void Claw::Shoot(double speed)
@@ -78,34 +77,25 @@ void Claw::SendData(std::string name)
 	//SmartDashboard::PutNumber(name + " Speed",lm.);
 }
 
-void Claw::OpenLog(std::string name)
+std::string Claw::GetLogCols()
 {
-	if(log==NULL)
-	{
-		logName = name +".txt";
-
-		log = fopen(logName.c_str(),"a");
-	}
-	if(log!=NULL)
-	{
-		fprintf(log, "Time, SensorState, RM Current, RM Voltage, RM Output Percent, LM Current, LM Voltage, LM Output Percent\r\n");//header
-	}
+	std::string cols;
+	cols =  "sensor, ";
+	cols += "RMCurrent, RMVoltage, RMOutputPercent, ";
+	cols += "LMCurrent, LMVoltage, LMOutputPercent";
+	return cols;
 }
 
-void Claw::CloseLog()
+std::string Claw::GetLogData()
 {
-	if(log!=NULL)
-	{
-		fclose(log);
-	}
+	std::string data;
+	data =  std::to_string(sensor.Get()) + ", ";
+	data += std::to_string(rm.GetOutputCurrent()) + ", ";
+	data += std::to_string(rm.GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(rm.GetMotorOutputPercent()) + ", ";
+	data += std::to_string(lm.GetOutputCurrent()) + ", ";
+	data += std::to_string(lm.GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(lm.GetMotorOutputPercent());
+	return data;
 }
 
-void Claw::Log()
-{
-	if(log!=NULL)
-	{
-		fprintf(log,"%f, %d, ", RobotController::GetFPGATime(), sensor.Get());
-		fprintf(log,"%f, %f, %f, "  , rm.GetOutputCurrent(), rm.GetMotorOutputVoltage(), rm.GetMotorOutputPercent());
-		fprintf(log,"%f, %f, %f\r\n", lm.GetOutputCurrent(), lm.GetMotorOutputVoltage(), lm.GetMotorOutputPercent());
-	}
-}

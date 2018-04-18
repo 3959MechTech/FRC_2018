@@ -117,45 +117,52 @@ void Elevator::SendData(std::string name)
 	SmartDashboard::PutNumber(name+" P",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_P,0,10));
 	SmartDashboard::PutNumber(name+" I",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_I,0,10));
 	SmartDashboard::PutNumber(name+" D",eTalon.ConfigGetParameter(ctre::phoenix::ParamEnum::eProfileParamSlot_D,0,10));
-	*/
+
 	SmartDashboard::PutNumber(name+" Master Current",eTalon.GetOutputCurrent());
 	SmartDashboard::PutNumber(name+" Master Voltage",eTalon.GetMotorOutputVoltage());
 	SmartDashboard::PutNumber(name+" Master Output%",eTalon.GetMotorOutputPercent());
 	SmartDashboard::PutNumber(name+" Slave Current",eSTalon.GetOutputCurrent());
 	SmartDashboard::PutNumber(name+" Slave Voltage",eSTalon.GetMotorOutputVoltage());
 	SmartDashboard::PutNumber(name+" Slave Output%",eSTalon.GetMotorOutputPercent());
-
-}
-void Elevator::OpenLog(std::string name)
-{
-	if(log==NULL)
-	{
-		logName = name +".txt";
-
-		log = fopen(logName.c_str(),"a");
-	}
-	if(log!=NULL)
-	{
-		//fprintf(log, "Time, SensorState, RM Current, RM Voltage, RM Output Percent, LM Current, LM Voltage, LM Output Percent\r\n");//header
-	}
+	 */
 }
 
-void Elevator::CloseLog()
+std::string Elevator::GetLogCols()
 {
-	if(log!=NULL)
-	{
-		fclose(log);
-	}
+	std::string cols;
+	cols =  "position, rawPos, velocity, slavePos, rawSlavePos, slaveVelocity, ";
+	cols += "topLS, bottomLS, sTopLS, sBottomLS, closedLoopTarget, closedLoopError";
+	cols += "current, voltage, outputPercent, sCurrent, sVoltage, sOutputPercent";
+	return cols;
 }
 
-void Elevator::Log()
+std::string Elevator::GetLogData()
 {
-	if(log!=NULL)
-	{
-//		fprintf(log,"%f, %d, ", RobotController::GetFPGATime(), sensor.Get());
-//		fprintf(log,"%f, %f, %f, "  , rm.GetOutputCurrent(), rm.GetMotorOutputVoltage(), rm.GetMotorOutputPercent());
-//		fprintf(log,"%f, %f, %f\r\n", lm.GetOutputCurrent(), lm.GetMotorOutputVoltage(), lm.GetMotorOutputPercent());
-	}
+	std::string data;
+	data =  std::to_string(eTalon.GetSelectedSensorPosition(0)) + ", ";
+	data += std::to_string(eTalon.GetSensorCollection().GetQuadraturePosition()) + ", ";
+	data += std::to_string(eTalon.GetSelectedSensorVelocity(0)) + ", ";
+	data += std::to_string(eSTalon.GetSelectedSensorPosition(0)) + ", ";
+	data += std::to_string(eSTalon.GetSensorCollection().GetQuadraturePosition()) + ", ";
+	data += std::to_string(eSTalon.GetSelectedSensorVelocity(0)) + ", ";
+
+	data += std::to_string(eTalon.GetSensorCollection().IsFwdLimitSwitchClosed()) + ", ";
+	data += std::to_string(eTalon.GetSensorCollection().IsRevLimitSwitchClosed()) + ", ";
+	data += std::to_string(eSTalon.GetSensorCollection().IsFwdLimitSwitchClosed()) + ", ";
+	data += std::to_string(eSTalon.GetSensorCollection().IsRevLimitSwitchClosed()) + ", ";
+
+	data += std::to_string(eTalon.GetClosedLoopTarget(0)) + ", ";
+	data += std::to_string(eTalon.GetClosedLoopError(0)) + ", ";
+
+	data += std::to_string(eTalon.GetOutputCurrent()) + ", ";
+	data += std::to_string(eTalon.GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(eTalon.GetMotorOutputPercent()) + ", ";
+
+	data += std::to_string(eSTalon.GetOutputCurrent()) + ", ";
+	data += std::to_string(eSTalon.GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(eSTalon.GetMotorOutputPercent());
+
+	return data;
 }
 
 double Elevator::GetHeight(EPos pos)

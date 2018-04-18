@@ -83,6 +83,9 @@ public:
 
 	void SendData(std::string name ="Drive");
 
+	std::string GetLogCols();
+	std::string GetLogData();
+
 };
 
 

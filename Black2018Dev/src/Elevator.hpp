@@ -12,6 +12,7 @@
 #include <WPILib.h>
 #include <string>
 
+
 class Elevator
 {
 public:
@@ -43,8 +44,7 @@ private:
 
 	EPos current;
 
-	FILE*	log;
-	std::string logName;
+
 
 public:
 
@@ -53,8 +53,8 @@ public:
 
 	void SendData(std::string name="Elevator");
 	void OpenLog(std::string name);
-	void CloseLog();
-	void Log();
+	std::string GetLogCols();
+	std::string GetLogData();
 
 	double GetHeight(EPos);
 	double GetRamp(EPos);

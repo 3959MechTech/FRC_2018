@@ -332,6 +332,52 @@ void MechTechDifferential::SendData(std::string name )
 
 }
 
+std::string MechTechDifferential::GetLogCols()
+{
+	std::string cols;
+	cols =  "LMVel, LMPos, RMVel, RMPos, ";
+	cols += "LClosedLoopTarget, LClosedLoopError, ";
+	cols += "RClosedLoopTarget, RClosedLoopError, ";
+	cols += "LMCurrent, LMVoltage, LMOutputPercent";
+	cols += "LSMCurrent, LSMVoltage, LSMOutputPercent";
+	cols += "RMCurrent, RMVoltage, RMOutputPercent, ";
+	cols += "RSMCurrent, RSMVoltage, RSMOutputPercent";
 
+	return cols;
+}
+
+std::string MechTechDifferential::GetLogData()
+{
+	std::string data;
+	data =  std::to_string(lM->GetSelectedSensorVelocity(0)) + ", ";
+	data += std::to_string(lM->GetSelectedSensorPosition(0)) + ", ";
+
+	data += std::to_string(rM->GetSelectedSensorVelocity(0)) + ", ";
+	data += std::to_string(rM->GetSelectedSensorPosition(0)) + ", ";
+
+	data += std::to_string(lM->GetClosedLoopTarget(0)) + ", ";
+	data += std::to_string(lM->GetClosedLoopError(0)) + ", ";
+
+	data += std::to_string(rM->GetClosedLoopTarget(0)) + ", ";
+	data += std::to_string(rM->GetClosedLoopError(0)) + ", ";
+
+	data += std::to_string(lM->GetOutputCurrent()) + ", ";
+	data += std::to_string(lM->GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(lM->GetMotorOutputPercent());
+
+	data += std::to_string(lS->GetOutputCurrent()) + ", ";
+	data += std::to_string(lS->GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(lS->GetMotorOutputPercent());
+
+	data += std::to_string(rM->GetOutputCurrent()) + ", ";
+	data += std::to_string(rM->GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(rM->GetMotorOutputPercent()) + ", ";
+
+	data += std::to_string(rS->GetOutputCurrent()) + ", ";
+	data += std::to_string(rS->GetMotorOutputVoltage()) + ", ";
+	data += std::to_string(rS->GetMotorOutputPercent());
+
+	return data;
+}
 
 
